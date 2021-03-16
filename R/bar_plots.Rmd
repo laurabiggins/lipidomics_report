@@ -1,0 +1,42 @@
+### `r lipid_class`
+
+```{r, fig.width = 12, fig.height = 6}
+bar_data %>%
+  filter(class == lipid_class) %>%
+  group_by(abundance) %>%
+  ggplot(aes(x = lipid_name, y = mean, fill = condition)) + 
+  geom_bar(colour = "black", 
+           position= position_dodge(width = dodge_width),
+           width = 0.8,
+           stat="identity",
+           lwd = 0.8) + 
+  geom_errorbar(
+    aes(ymin=mean-se, ymax=mean+se), 
+    position = position_dodge(width = dodge_width), 
+    width = 0.25,
+    lwd = 0.8
+  ) +
+  scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, face = "bold")) +
+  ylab("log2 mean") +
+  xlab("") +
+  facet_wrap(vars(abundance), scales = "free")
+```
+```{r, eval = FALSE}
+lipid_class <- "PC"
+dodge_width <- 0.8
+
+# get the min mean for control/KO per lipid name
+bar_data %>%
+  filter(class == lipid_class) %>%
+  group_by(abundance) %>%
+  ggplot(aes(x = lipid_name, y = mean, fill = condition)) + 
+  geom_bar(colour = "black", 
+           position= position_dodge(width = dodge_width),
+           width = 0.8,
+           stat="identity",
+           lwd = 0.8) +
+  facet_wrap(vars(abundance), scales = "free")
+
+```

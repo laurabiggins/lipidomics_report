@@ -1,0 +1,110 @@
+### `r lipid_to_plot`
+
+```{r plotting_functions}
+# linear_boxplot <- function(data_tib){
+# 
+#   data_tib %>%
+#     ggplot(aes(condition, value, color = condition)) +
+#     geom_boxplot(width = 0.5, aes(fill = condition), alpha = 0.3, lwd = 2, position= position_dodge2(padding = 0.01)) +
+#     geom_jitter(width = 0.1, height = 0, size = 4, color = "black") +
+#     ggplot2::scale_color_manual(values = c("#193b85", "#0e876d")) +
+#     ggplot2::scale_fill_manual(values = c("#193b85", "#0e876d")) +
+#     coord_cartesian(xlim = c(1.2, 1.8)) 
+# }
+
+unpaired_boxplot <- function(data_tib, val = "value"){
+  
+  data_tib %>%
+    ggplot(aes(condition, .data[[val]], color = condition)) +
+    geom_boxplot(width = 0.5, aes(fill = condition), alpha = 0.3, lwd = 2, position= position_dodge2(padding = 0.01)) +
+    
+    geom_jitter(width = 0.1, height = 0, size = 4, color = "black") +
+    ggplot2::scale_color_manual(values = c("#193b85", "#0e876d")) +
+    ggplot2::scale_fill_manual(values = c("#193b85", "#0e876d")) +
+    coord_cartesian(xlim = c(1.2, 1.8)) 
+}
+
+paired_lineplot <- function(data_tib, val = "value"){
+  
+  data_tib %>%
+    #filter(lipid_name == lipid_to_plot) %>%
+    mutate(rep = stringr::str_extract(sample_name, "[:digit:]$+")) %>% # assuming the rep is the last digit
+    ggplot(aes(condition, .data[[val]], color = rep)) +
+    geom_point(size = 5) +
+    geom_line(aes(group = rep, color = rep), size = 2) +
+    coord_cartesian(xlim = c(1.4, 1.6))
+}
+```
+
+
+```{r out.width=c('50%', '50%'), fig.show='hold', eval = FALSE}
+# paired line plot
+if(params$paired){
+  tidy_data %>%
+    filter(lipid_name == lipid_to_plot) %>%
+    mutate(rep = stringr::str_extract(sample_name, "[:digit:]$+")) %>% # assuming the rep is the last digit
+    #tidyr::separate(sample_name, sep = "_", into = c(NA, "rep"), remove = FALSE) %>%
+    ggplot(aes(condition, log2_value, color = rep)) +
+    geom_point(size = 5) +
+    geom_line(aes(group = rep, color = rep), size = 2) +
+    coord_cartesian(xlim = c(1.4, 1.6))
+}
+
+set.seed(1)
+# box and jitter plots
+tidy_data %>%
+  filter(lipid_name == lipid_to_plot) %>%
+  #mutate(rep = stringr::str_extract(sample_name, "[:digit:]$+")) %>% # assuming the rep is the last digit
+  #tidyr::separate(sample_name, sep = "_", into = c(NA, "rep"), remove = FALSE) %>%
+  ggplot(aes(condition, log2_value, color = condition)) +
+  geom_boxplot(width = 0.5, aes(fill = condition), alpha = 0.3, lwd = 2, position= position_dodge2(padding = 0.01)) +
+  
+  geom_jitter(width = 0.1, height = 0, size = 4, color = "black") +
+  ggplot2::scale_color_manual(values = c("#193b85", "#0e876d")) +
+  ggplot2::scale_fill_manual(values = c("#193b85", "#0e876d")) +
+  coord_cartesian(xlim = c(1.2, 1.8))
+```
+
+```{r}
+#lipid_to_plot <- "PC 26:0"
+one_lipid <- long_stats_pvals %>%
+  filter(lipid_name == lipid_to_plot)
+```
+
+<div class = "row">
+<div class = "col-md-6">
+```{r}
+test <- one_lipid$test_type[1]
+#trans_type <- one_lipid$transform[1]
+set.seed(1)
+
+switch(test, 
+      linear_t_test = unpaired_boxplot(one_lipid),
+      log2_t_test = unpaired_boxplot(one_lipid, "log2_value"),
+      linear_paired_t_test = paired_lineplot(one_lipid),
+      log2_paired_t_test = paired_lineplot(one_lipid, "log2_value"),
+      Welch = unpaired_boxplot(one_lipid),
+      none = unpaired_boxplot(one_lipid)
+      )
+```
+</div>
+<div class = "col-md-6">
+<br>
+<br>  
+
+#### Test performed: `r one_lipid$test_type[1]`  
+
+#### p-value (uncorrected)    
+```{r, results="asis"}
+cat(one_lipid$p_val[1])
+```
+<br>
+
+```{r, results="asis"}
+cat(stat_test_info(one_lipid$test_type[1]))
+```
+
+</div>
+</div>
+
+
