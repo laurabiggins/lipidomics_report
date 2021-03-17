@@ -11,9 +11,9 @@ The lipid name should be in the format "lipid class [space] subclass" e.g. "PC 2
 The metadata file should be in one of the formats with the column names as shown (extra columns can be present, they will be ignored):
 
 #### Experimental design  
-The processing and statistics will differ depending on whether the experimental design is independent or uses matched samples. See the slides [link] for further information on independent vs matched design.
+The processing and statistics will differ depending on whether the experimental design is independent or uses matched samples. See the [slides](https://github.com/laurabiggins/lipidomics_report/blob/main/info/Experimental_design_independent_vs_matched.pdf) for further information on independent vs matched design.
 
-#### Unpaired samples
+#### Independent/Unpaired samples
 
 | SampleName | Type | 
 | ---------- | ---- |
@@ -24,7 +24,7 @@ The processing and statistics will differ depending on whether the experimental 
 | S2_2       | KO |
 | S2_3       | KO |
 
-#### Paired samples
+#### Matched/Paired samples
 
 | SampleName | Type | Rep | 
 | ---------- | ---- | --- |
