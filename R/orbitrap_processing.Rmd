@@ -3,11 +3,11 @@ title: Lipidomics report
 date: "`r Sys.Date()`"
 output: 
   html_document:
-    keep_md: false
+    keep_md: true
 output_file: lip
 params: 
-  metadata_file: metadata.txt
-  input_file: alldata.lipidomics_summary_test_data.tsv
+  metadata_file: ../data/metadata.txt
+  input_file: ../data/alldata.lipidomics_summary_test_data.tsv
   #input_file: x
   meta_sample_name: SampleName
   meta_condition_type: Type
@@ -25,22 +25,10 @@ options(knitr.duplicate.label = "allow")
 source("heatmap_processing.R")
 source("stats.R")
 
+# Need to sort out an extra field in the metadata for paired samples, a rep column
 ```
 
 ```{r import_data}
-# metadata_file <- "metadata.txt"
-# input_file <- "alldata.lipidomics_summary_test_data.tsv"
-# lipid_name_col <- "X1"
-# meta_sample_name <- "SampleName"
-# meta_condition_type <- "Type"
-# 
-# input_file <- "../Steven_orbitrap/alldata.lipidomics_summary.tsv"
-# metadata_file <- "../Steven_orbitrap/metadata2.tsv"
-# metadata <- readr::read_tsv(metadata_file)
-# all_data <- readr::read_tsv(input_file)
-#metadata <- readr::read_tsv("../example_data/Mouse-Ear-Serum/metadata_ALL.tsv")
-#all_data <- readr::read_tsv(files[i])
-
 metadata <- readr::read_tsv(params$metadata_file)
 all_data <- readr::read_tsv(params$input_file)
 
@@ -54,8 +42,6 @@ meta_type <- metadata %>%
   dplyr::select(sample_name, condition) %>%
   dplyr::mutate(condition = stringr::str_squish(condition)) #we've had double spaces that messes things up
 
-#exp_conditions <- unique(pull(meta_type, condition))
-
 tidy_data <- all_data %>%
   tidyr::pivot_longer(cols = -lipid_name, names_to = "sample_name") %>%
   tidyr::separate(lipid_name, sep = " ", into = c("class", NA), remove = FALSE) %>%
@@ -68,10 +54,6 @@ exp_conditions <- unique(pull(tidy_data, condition))
 
 
 ```{r calculate_some_stats}
-# stats_pvals <- do_stats(tidy_data) %>%
-#   select(lipid_name, test_type, p_val) %>%
-#   distinct()
-
 # get mean and standard deviation
 mean_stdev <- tidy_data %>%
   dplyr::group_by(lipid_name, condition) %>%
@@ -102,6 +84,7 @@ stats_pvals <- long_stats_pvals %>%
 ```
 
 ```{r log_stats}
+# to remove eventually but it is used for the bar plots at the moment
 
 log_stats <- tidy_data %>%
   dplyr::group_by(lipid_name, condition) %>%
@@ -121,6 +104,33 @@ log_data <- log_stats %>%
   tidyr::separate(lipid_name, sep = " ", into = c("class", NA), remove = FALSE) 
 ```
 
+```{r ratio_stats}
+conditions <- unique(tidy_data$condition)
+
+x <- tidy_data %>%
+  group_by(class, lipid_name, condition) %>% 
+  summarise(
+    sum = sum(value),
+    mean = mean(value), 
+    stdev = sd(value),
+    se = sd(value)/sqrt(dplyr::n())
+  ) %>%
+  ungroup() 
+
+ratios <- x %>%
+  group_by(lipid_name) %>%
+  pivot_wider(id_cols = c(lipid_name, condition, sum), 
+    names_from = condition, 
+    values_from = sum,
+  ) %>%
+  mutate(ratio = .data[[conditions[1]]]/.data[[conditions[2]]]) %>%
+  select(lipid_name, ratio) %>%
+  right_join(x) %>%
+  group_by(lipid_name) %>%
+  slice(1)
+```
+
+
 # {.tabset .tabset-pills}
 
 ## Summary plots
@@ -131,7 +141,8 @@ within each lipid subclass. The errorbars show the standard error of the mean.
 More information can be found in the other tabs in the report.
   
 
-```{r }
+```{r}
+# for if there are loads and we want a link to the plot further down the page
 lipid_classes <- unique(tidy_data$class)
 class_link <- function(class){
   paste0("<a href=", "\"", paste0("#", tolower(class)), "\">", class, "</a>")
@@ -151,6 +162,16 @@ bar_data <- log_data %>%
   mutate(min_mean = min(mean)) %>%
   ungroup() %>%
   mutate(abundance = if_else(min_mean <= 0, "low", "high"))
+
+bar_data_linear <- bar_data %>% 
+  select(lipid_name, abundance) %>%
+  distinct() %>%
+  left_join(stats_pvals)
+
+ratio_data <- bar_data %>% 
+  select(lipid_name, abundance) %>%
+  distinct() %>%
+  left_join(ratios)
 
 ```
 
@@ -212,8 +233,8 @@ summary_table_data %>%
 ```
 
 ```{r, results = "asis"}
-res <- lapply(unique(tidy_data$lipid_name)[1:3], function(lipid_to_plot) { # to speed up tests
-#res <- lapply(unique(tidy_data$lipid_name), function(lipid_to_plot) {
+#res <- lapply(unique(tidy_data$lipid_name)[1:3], function(lipid_to_plot) { # to speed up tests
+res <- lapply(unique(tidy_data$lipid_name), function(lipid_to_plot) {
   knitr::knit_child(
     "child_plots.Rmd", envir = environment(), quiet = TRUE
   )
@@ -301,7 +322,21 @@ pheatmap::pheatmap(
 ```
 
 
+## Test
 
+```{r}
+#knitr::knit_child("forest_plots.Rmd", envir = environment(), quiet = TRUE)
+```
+
+```{r, results = "asis"}
+lipid_classes <- unique(tidy_data$class)
+res <- lapply(lipid_classes, function(lipid_class) {
+  knitr::knit_child(
+    "forest_plots.Rmd", envir = environment(), quiet = TRUE
+  )
+})
+cat(unlist(res), sep = '\n')
+```
 
 
 
