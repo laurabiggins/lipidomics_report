@@ -1,11 +1,11 @@
-rmarkdown::render(
-  "orbitrap_processing.Rmd", 
-  params = list(
-    input_file = "../Steven_orbitrap/alldata.lipidomics_summary.tsv",
-    metadata_file = "../Steven_orbitrap/metadata2.tsv"
-  ),
-  output_file = paste0('lipidomics_report_', Sys.Date(), '.html')
-)
+# rmarkdown::render(
+#   "orbitrap_processing.Rmd", 
+#   params = list(
+#     input_file = "../Steven_orbitrap/alldata.lipidomics_summary.tsv",
+#     metadata_file = "../Steven_orbitrap/metadata2.tsv"
+#   ),
+#   output_file = paste0('lipidomics_report_', Sys.Date(), '.html')
+# )
 
 
 dir.create("output")#, showWarnings = FALSE)
