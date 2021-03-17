@@ -2,4 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
-output
+orbitrap_processing.Rmd
+orbitrap_processing.html
+orbitrap_processing.md
+orbitrap_processing_files
