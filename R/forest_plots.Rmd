@@ -1,0 +1,50 @@
+### `r lipid_class` test plot
+
+```{r}
+# devtools::install_github("NightingaleHealth/ggforestplot")
+conditions <- unique(tidy_data$condition)
+
+x <- tidy_data %>%
+  filter(class == lipid_class) %>%
+  group_by(lipid_name, condition) %>% 
+  summarise(
+    sum = sum(value),
+    mean = mean(value), 
+    stdev = sd(value),
+    se = sd(value)/sqrt(dplyr::n())
+  ) %>%
+  ungroup() 
+
+ratios <- x %>%
+  group_by(lipid_name) %>%
+  pivot_wider(id_cols = c(lipid_name, condition, sum), 
+    names_from = condition, 
+    values_from = sum,
+  ) %>%
+  mutate(ratio = .data[[conditions[1]]]/.data[[conditions[2]]]) %>%
+  select(lipid_name, ratio) %>%
+  right_join(x) %>%
+  group_by(lipid_name) %>%
+  slice(1)
+```
+```{r, out.width=c('50%', '50%'), fig.show='hold', fig.height = 8}
+ratios %>%
+  ggplot(aes(x = ratio, y = lipid_name)) +
+  geom_point() +
+  geom_errorbar(
+    aes(xmin=ratio-se, xmax=ratio+se), 
+    position = position_dodge(width = 0.8), 
+    width = 0.25,
+    lwd = 0.8
+  )
+
+ratios %>%
+  ggplot(aes(x = log2(ratio), y = lipid_name)) +
+  geom_point() +
+  geom_errorbar(
+    aes(xmin=log2(ratio)-log2(se), xmax=log2(ratio)+log2(se)), 
+    position = position_dodge(width = 0.8), 
+    width = 0.25,
+    lwd = 0.8
+  )
+```

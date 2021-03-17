@@ -1,17 +1,6 @@
 ### `r lipid_to_plot`
 
 ```{r plotting_functions}
-# linear_boxplot <- function(data_tib){
-# 
-#   data_tib %>%
-#     ggplot(aes(condition, value, color = condition)) +
-#     geom_boxplot(width = 0.5, aes(fill = condition), alpha = 0.3, lwd = 2, position= position_dodge2(padding = 0.01)) +
-#     geom_jitter(width = 0.1, height = 0, size = 4, color = "black") +
-#     ggplot2::scale_color_manual(values = c("#193b85", "#0e876d")) +
-#     ggplot2::scale_fill_manual(values = c("#193b85", "#0e876d")) +
-#     coord_cartesian(xlim = c(1.2, 1.8)) 
-# }
-
 unpaired_boxplot <- function(data_tib, val = "value"){
   
   data_tib %>%
