@@ -10,18 +10,29 @@ unpaired_boxplot <- function(data_tib, val = "value"){
     geom_jitter(width = 0.1, height = 0, size = 4, color = "black") +
     ggplot2::scale_color_manual(values = c("#193b85", "#0e876d")) +
     ggplot2::scale_fill_manual(values = c("#193b85", "#0e876d")) +
-    coord_cartesian(xlim = c(1.2, 1.8)) 
+    coord_cartesian(xlim = c(1.2, 1.8)) +
+    xlab("") +
+    theme(
+      axis.title.y = element_text(size = 20), 
+      axis.text.x = element_text(size = 20),
+      axis.text.y = element_text(size = 14),
+      legend.position = "none"
+    )
 }
 
 paired_lineplot <- function(data_tib, val = "value"){
   
   data_tib %>%
-    #filter(lipid_name == lipid_to_plot) %>%
-    mutate(rep = stringr::str_extract(sample_name, "[:digit:]$+")) %>% # assuming the rep is the last digit
     ggplot(aes(condition, .data[[val]], color = rep)) +
     geom_point(size = 5) +
     geom_line(aes(group = rep, color = rep), size = 2) +
-    coord_cartesian(xlim = c(1.4, 1.6))
+    coord_cartesian(xlim = c(1.4, 1.6)) +
+    xlab("") +
+    theme(
+      axis.title.y = element_text(size = 20), 
+      axis.text.x = element_text(size = 20),
+      axis.text.y = element_text(size = 14)
+    )
 }
 ```
 
@@ -77,20 +88,32 @@ switch(test,
       )
 ```
 </div>
-<div class = "col-md-6">
+
+<div class = "col-md-1">
+</div>
+<div class = "col-md-5">
 <br>
 <br>  
 
-#### Test performed: `r one_lipid$test_type[1]`  
+```{r neaten_test}
+neat_test <- gsub(x = one_lipid$test_type[1], "_", " ")
+```
 
-#### p-value (uncorrected)    
-```{r, results="asis"}
+#### Test performed: `r neat_test`  
+
+#### p-value (uncorrected) : `r one_lipid$p_val[1]`    
+```{r, results="asis", eval = FALSE}
 cat(one_lipid$p_val[1])
 ```
-<br>
+<br><br><br>
 
 ```{r, results="asis"}
-cat(stat_test_info(one_lipid$test_type[1]))
+small_text <- function(x, size = 12) {
+  sprintf("<span style='font-size: %spx;'>%s</span>", size, x)
+}
+#cat(stat_test_info(one_lipid$test_type[1]))
+
+cat(small_text(stat_test_info(one_lipid$test_type[1])))
 ```
 
 </div>
