@@ -1,0 +1,13 @@
+SampleName	Type	Rep
+WT_1	Control	1
+WT_2	Control	2
+WT_3	Control	3
+WT_4	Control	4
+Tt1_1	Treatment1	1
+Tt1_2	Treatment1	2
+Tt1_3	Treatment1	3
+Tt1_4	Treatment1	4
+Tt2_1	Treatment2	1
+Tt2_2	Treatment2	2
+Tt2_3	Treatment2	3
+Tt2_4	Treatment2	4
