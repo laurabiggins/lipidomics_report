@@ -4,13 +4,23 @@
 # 
 # 
 
-# t-test
-# if the data is paired, we can do a paired t-test
 
-# tidy_dataset <- tidy_data, stats_summary
 
+#' Do stats
+#' 
+#' This is a wrapper around decide_test() and do_test(), which checks properties 
+#' of the data (per lipid), decides on the appropriate statistical test, and runs
+#' it, producing a p-value.
+#'
+#' @param tidy_dataset 
+#' @param stats_summary 
+#' @param paired 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 do_stats <- function(tidy_dataset, stats_summary, paired = FALSE){
-
   
   n_counts <-  tidy_dataset %>%
     dplyr::group_by(lipid_name, condition) %>%
@@ -44,9 +54,6 @@ do_stats <- function(tidy_dataset, stats_summary, paired = FALSE){
 #   slice(1:2)
 
  
-
-# are we doing a single sample t-test if only one condition has enough data?
-
 
 #' For calculating standard deviation ratio between 2 condition types
 #'
@@ -90,8 +97,6 @@ get_ratio_validity <- function(df){
   which.max(df$mean) == which.max(df$stdev)
 }
 
-
-  
 #' For calculating fold change between 2 conditions. Another function would be needed
 #' for more than 2 conditions
 #'
@@ -102,6 +107,39 @@ get_ratio_validity <- function(df){
 #'
 #' @examples
 get_fold_change <- function(df){
+  
+  conditions <- unique(df$condition)
+
+  if(length(conditions) == 3){
+    stop("populate this for > 2 conditions")
+  }
+  
+  fc_name <- paste0("FC_", conditions[1], "_", conditions[2])
+    
+  fc_data <- pivot_wider(
+    df,
+    id_cols = c(lipid_name, condition, mean), 
+    names_from = condition, 
+    values_from = mean,
+  ) %>%
+    mutate(fold_change = .data[[conditions[1]]]/.data[[conditions[2]]]) %>%
+    rename(!!fc_name := fold_change) 
+  
+  fc_data %>%
+    select(-all_of(conditions))
+}
+
+
+#' For calculating fold change between 2 conditions. Another function would be needed
+#' for more than 2 conditions
+#'
+#' @param df with column names lipid_name, condition, mean
+#'
+#' @return tibble containing columns lipid name, fold change
+#' @export
+#'
+#' @examples
+get_fold_change_2_conditions <- function(df){
   
   conditions <- unique(df$condition)
   assertthat::assert_that(

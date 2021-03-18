@@ -11,6 +11,7 @@ params:
   #input_file: x
   meta_sample_name: SampleName
   meta_condition_type: Type
+  meta_rep: Rep
   lipid_name_col: X1
   paired: TRUE
 
@@ -36,11 +37,20 @@ all_data <- dplyr::rename(all_data, lipid_name := tidyselect::all_of(params$lipi
 ```
 
 ```{r process_data}
-meta_type <- metadata %>%
+meta_info <- metadata %>%
   dplyr::rename(sample_name = tidyselect::all_of(params$meta_sample_name)) %>%
   dplyr::rename(condition = tidyselect::all_of(params$meta_condition_type)) %>%
-  dplyr::select(sample_name, condition) %>%
   dplyr::mutate(condition = stringr::str_squish(condition)) #we've had double spaces that messes things up
+
+if(params$paired) {
+  meta_type <- meta_info %>%
+    dplyr::rename(rep = tidyselect::all_of(params$meta_rep)) %>%
+    dplyr::select(sample_name, condition, rep) %>%
+    dplyr::mutate(rep = forcats::as_factor(rep))
+} else {
+  meta_type <- meta_info %>%
+    dplyr::select(sample_name, condition)
+}
 
 tidy_data <- all_data %>%
   tidyr::pivot_longer(cols = -lipid_name, names_to = "sample_name") %>%
@@ -189,13 +199,24 @@ cat(unlist(res), sep = '\n')
 
 ```{r}
 summary_table_data <- stats_pvals %>%
-  select(class, lipid_name, mean, condition, fold_change, p_val, test_type) %>%
-  pivot_wider(names_from = condition, names_prefix = "mean_", values_from = mean) %>%
-  mutate(log2_fc = log2(fold_change)) 
+  select(-contains("ratio"), -stdev, -se) %>%
+  dplyr::relocate(class) %>%
+  pivot_wider(names_from = condition, names_prefix = "mean_", values_from = mean) 
+
+log2_fc <- summary_table_data %>%
+  select(starts_with("FC")) %>%
+  log2() %>%
+  rename_with(~ paste0("log2_", .x))
+
+summary_table_data <- cbind(summary_table_data, log2_fc)
+
+cols_to_round <- summary_table_data %>%
+  dplyr::select(all_of(c(contains("mean"), contains("FC")))) %>%
+  colnames()
 
 summary_table_data %>%
   DT::datatable(rownames = FALSE, options = list(pageLength = 15, dom = "ftlip")) %>%
-  DT::formatRound(c(3,6:8))
+  DT::formatRound(digits = 3, cols_to_round)
 
 ```
 
@@ -222,13 +243,14 @@ get_link <- function(lipid){
 
 summary_table_data %>%
   dplyr::mutate(lipid_name = get_link(lipid_name)) %>%
-  select(-fold_change) %>%
+  #select(-fold_change) %>%
   DT::datatable(
     rownames = FALSE, 
     options = list(pageLength = 5, dom = "tlip"), 
     filter = list(position = "top"),
     escape = FALSE) %>%
-  DT::formatRound(5:7, digits = 3)
+  #DT::formatRound(5:7, digits = 3)
+  DT::formatRound(digits = 3, cols_to_round)
   
 ```
 
