@@ -114,7 +114,7 @@ log_data <- log_stats %>%
   tidyr::separate(lipid_name, sep = " ", into = c("class", NA), remove = FALSE) 
 ```
 
-```{r ratio_stats}
+```{r ratio_stats, eval = FALSE}
 conditions <- unique(tidy_data$condition)
 
 x <- tidy_data %>%
@@ -127,7 +127,7 @@ x <- tidy_data %>%
   ) %>%
   ungroup() 
 
-ratios <- x %>%
+ratios_bad <- x %>%
   group_by(lipid_name) %>%
   pivot_wider(id_cols = c(lipid_name, condition, sum), 
     names_from = condition, 
@@ -140,6 +140,30 @@ ratios <- x %>%
   slice(1)
 ```
 
+```{r ttestratio}
+conditions <- unique(tidy_data$condition)
+
+ratio_wrapper <- function(df, conditions){
+  
+  if(all(df[[conditions[1]]] == 0) | all(df[[conditions[2]]] == 0)) return (NA)
+  res <- mratios::ttestratio(df[[conditions[1]]], df[[conditions[2]]], alternative="two.sided")
+  #conf <- ttestratio(df[[conditions[1]]], df[[conditions[2]]], alternative="two.sided")$conf.int
+  
+  conf_rat <- c(res$estimate[["x/y"]], res$conf.int)
+  paste0(conf_rat, collapse = ",")
+  
+}
+
+ratios <- tidy_data %>%
+  group_by(lipid_name) %>%
+  select(class, lipid_name, rep, condition, value) %>%
+  pivot_wider(names_from = condition, values_from = value) %>%
+  mutate(ratio = ratio_wrapper(cur_data(), conditions = conditions[1:2])) %>%
+  select(class, lipid_name, ratio) %>%
+  distinct() %>%
+  separate(ratio, into = c("x/y", "lower", "upper"), sep = ",", convert = TRUE) %>%
+  ungroup()
+```
 
 # {.tabset .tabset-pills}
 
@@ -170,8 +194,10 @@ dodge_width <- 0.8
 bar_data <- log_data %>%
   group_by(lipid_name) %>%
   mutate(min_mean = min(mean)) %>%
+  mutate(max_mean = max(mean)) %>%
   ungroup() %>%
-  mutate(abundance = if_else(min_mean <= 0, "low", "high"))
+ # mutate(abundance = if_else(min_mean <= 0, "low", "high"))
+  mutate(abundance = if_else(max_mean <= 0, "low", "high"))
 
 bar_data_linear <- bar_data %>% 
   select(lipid_name, abundance) %>%
@@ -312,6 +338,7 @@ annot_colours <- list(
   class = lipid_colours
 )
 ```
+
 ### Heatmap ordered by lipid subclass
 
 ```{r, fig.height = 8, fig.width = 10}
@@ -342,23 +369,4 @@ pheatmap::pheatmap(
   annotation_colors = annot_colours
 )
 ```
-
-
-## Test
-
-```{r}
-#knitr::knit_child("forest_plots.Rmd", envir = environment(), quiet = TRUE)
-```
-
-```{r, results = "asis"}
-lipid_classes <- unique(tidy_data$class)
-res <- lapply(lipid_classes, function(lipid_class) {
-  knitr::knit_child(
-    "forest_plots.Rmd", envir = environment(), quiet = TRUE
-  )
-})
-cat(unlist(res), sep = '\n')
-```
-
-
 

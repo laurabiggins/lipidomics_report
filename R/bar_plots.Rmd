@@ -1,6 +1,73 @@
 ### `r lipid_class`
+  
+#### High abundance linear
 
-#### High abundance  
+```{r, out.width=c('50%', '50%'), fig.show='hold', fig.height = 6}
+bar_data_linear %>%
+  filter(class == lipid_class) %>%
+  filter(abundance == "high") %>%
+  ggplot(aes(x = lipid_name, y = mean, fill = condition)) + 
+  geom_bar(colour = "black", 
+           position= position_dodge(width = dodge_width),
+           width = 0.8,
+           stat="identity",
+           lwd = 0.8) + 
+  geom_errorbar(
+    aes(ymin=mean-se, ymax=mean+se), 
+    position = position_dodge(width = dodge_width), 
+    width = 0.25,
+    lwd = 0.8
+  ) +
+  scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, face = "bold")) +
+  xlab("")
+
+ratio_data %>%
+  filter(class == lipid_class) %>%
+  filter(abundance == "high") %>%
+  ggplot(aes(x = `x/y`, y = lipid_name)) +
+  geom_point(size = 3) +
+  geom_errorbar(
+    aes(xmin=lower, xmax=upper), 
+    position = position_dodge(width = 0.8), 
+    width = 0.25,
+    lwd = 0.8
+  )
+
+```
+   
+    
+#### High abundance log transformed
+
+```{r, eval = FALSE}
+lipid_class <- "PC"
+ratios %>%
+  filter(class == lipid_class) %>%
+  filter(abundance == "high") %>%
+  ggplot(aes(x = `x/y`, y = lipid_name)) +
+  geom_point(size = 3) +
+  geom_errorbar(
+    aes(xmin=lower, xmax=upper), 
+    position = position_dodge(width = 0.8), 
+    width = 0.25,
+    lwd = 0.8
+  )
+
+ratios %>%
+  filter(class == lipid_class) %>%
+  filter(abundance == "high") %>%
+  ggplot(aes(x = log2(`x/y`), y = lipid_name)) +
+  geom_point(size = 3) +
+  geom_errorbar(
+    aes(xmin=log2(lower), xmax=log2(upper)), 
+    position = position_dodge(width = 0.8), 
+    width = 0.25,
+    lwd = 0.8
+  )
+
+```
+
 
 ```{r, out.width=c('50%', '50%'), fig.show='hold', fig.height = 6}
 bar_data %>%
@@ -27,52 +94,19 @@ bar_data %>%
 ratio_data %>%
   filter(class == lipid_class) %>%
   filter(abundance == "high") %>%
-  ggplot(aes(x = log2(ratio), y = lipid_name)) +
+  ggplot(aes(x = log2(`x/y`), y = lipid_name)) +
   geom_point(size = 3) +
   geom_errorbar(
-    aes(xmin=log2(ratio)-log2(se), xmax=log2(ratio)+log2(se)), 
+    aes(xmin=log2(lower), xmax=log2(upper)), 
     position = position_dodge(width = 0.8), 
     width = 0.25,
     lwd = 0.8
   )
+
 ```
 
-#### Low abundance log transformed
 
-```{r, out.width=c('50%', '50%'), fig.show='hold', fig.height = 6}
-bar_data %>%
-  filter(class == lipid_class) %>%
-  filter(abundance == "low") %>%
-  ggplot(aes(x = lipid_name, y = mean, fill = condition)) + 
-  geom_bar(colour = "black", 
-           position= position_dodge(width = dodge_width),
-           width = 0.8,
-           stat="identity",
-           lwd = 0.8) + 
-  geom_errorbar(
-    aes(ymin=mean-se, ymax=mean+se), 
-    position = position_dodge(width = dodge_width), 
-    width = 0.25,
-    lwd = 0.8
-  ) +
-  scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 90, face = "bold")) +
-  ylab("log2 mean") +
-  xlab("") 
-
-ratio_data %>%
-  filter(class == lipid_class) %>%
-  filter(abundance == "low") %>%
-  ggplot(aes(x = log2(ratio), y = lipid_name)) +
-  geom_point(size = 3) +
-  geom_errorbar(
-    aes(xmin=log2(ratio)-log2(se), xmax=log2(ratio)+log2(se)), 
-    position = position_dodge(width = 0.8), 
-    width = 0.25,
-    lwd = 0.8
-  )
-```
+    
 <br>  
 
 #### Low abundance linear
@@ -101,10 +135,10 @@ bar_data_linear %>%
 ratio_data %>%
   filter(class == lipid_class) %>%
   filter(abundance == "low") %>%
-  ggplot(aes(x = ratio, y = lipid_name)) +
+  ggplot(aes(x = `x/y`, y = lipid_name)) +
   geom_point(size = 3) +
   geom_errorbar(
-    aes(xmin=ratio-se, xmax=ratio+se), 
+    aes(xmin=lower, xmax=upper), 
     position = position_dodge(width = 0.8), 
     width = 0.25,
     lwd = 0.8
@@ -113,6 +147,45 @@ ratio_data %>%
 
   
 <br>
+
+#### Low abundance log transformed
+
+```{r, out.width=c('50%', '50%'), fig.show='hold', fig.height = 6}
+bar_data %>%
+  filter(class == lipid_class) %>%
+  filter(abundance == "low") %>%
+  ggplot(aes(x = lipid_name, y = mean, fill = condition)) + 
+  geom_bar(colour = "black", 
+           position= position_dodge(width = dodge_width),
+           width = 0.8,
+           stat="identity",
+           lwd = 0.8) + 
+  geom_errorbar(
+    aes(ymin=mean-se, ymax=mean+se), 
+    position = position_dodge(width = dodge_width), 
+    width = 0.25,
+    lwd = 0.8
+  ) +
+  scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, face = "bold")) +
+  ylab("log2 mean") +
+  xlab("") 
+
+ratio_data %>%
+  filter(class == lipid_class) %>%
+  filter(abundance == "low") %>%
+  ggplot(aes(x = log2(`x/y`), y = lipid_name)) +
+  geom_point(size = 3) +
+  geom_errorbar(
+    aes(xmin=log2(lower), xmax=log2(upper)), 
+    position = position_dodge(width = 0.8), 
+    width = 0.25,
+    lwd = 0.8
+  )
+```
+
+
 <br>
 
 
