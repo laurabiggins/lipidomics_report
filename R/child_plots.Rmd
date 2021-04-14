@@ -2,7 +2,7 @@
 
 ```{r, eval = FALSE}
 # to test this
-lipid_to_plot <- "PC 26:0" 
+#lipid_to_plot <- "PC 26:0" 
 ```
 
 ```{r plotting_functions}
@@ -10,8 +10,13 @@ unpaired_boxplot <- function(data_tib, val = "value"){
   
   data_tib %>%
     ggplot(aes(condition, .data[[val]], color = condition)) +
-    geom_boxplot(width = 0.5, aes(fill = condition), alpha = 0.3, lwd = 2, position= position_dodge2(padding = 0.01)) +
-    
+    geom_boxplot(
+      width = 0.5, 
+      aes(fill = condition), 
+      alpha = 0.3, 
+      lwd = 2, 
+      position= position_dodge2(padding = 0.01)
+    ) +
     geom_jitter(width = 0.1, height = 0, size = 4, color = "black") +
     ggplot2::scale_color_manual(values = c("#193b85", "#0e876d")) +
     ggplot2::scale_fill_manual(values = c("#193b85", "#0e876d")) +
@@ -51,7 +56,6 @@ one_lipid <- long_stats_pvals %>%
 <div class = "col-md-6">
 ```{r}
 test <- one_lipid$test_type[1]
-#trans_type <- one_lipid$transform[1]
 set.seed(1)
 
 # create plot depending on the type of test performed
@@ -75,7 +79,7 @@ switch(test,
 <br>  
 
 ```{r neaten_test}
-neat_test <- gsub(x = one_lipid$test_type[1], "_", " ")
+neat_test <- gsub(x = test, "_", " ")
 ```
 
 #### Test performed: `r neat_test`  
