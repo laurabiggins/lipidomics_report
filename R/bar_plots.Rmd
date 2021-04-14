@@ -1,4 +1,6 @@
-### `r lipid_class`
+### `r lipid_class`  
+  
+<br>
 
 ```{r barplot_function}
 
@@ -43,7 +45,6 @@ custom_forest <- function(plot_data, lipid_class, abundance_level){
 ```
 
 
-
 ```{r process_bar_data}
 dodge_width <- 0.8
 
@@ -70,7 +71,6 @@ abundance_data <- bar_data_linear %>%
   select(lipid_name, abundance) %>%
   distinct()
 
-
 mean_log2 <- tidy_data %>%
   dplyr::group_by(lipid_name, condition) %>%
   dplyr::summarise(
@@ -94,7 +94,7 @@ t_test_res <- tidy_data %>%
   left_join(abundance_data)
 ```
 
-#### High abundance linear
+#### High abundance
 
 ```{r, out.width=c('50%', '50%'), fig.show='hold', fig.height = 6}
 
@@ -104,7 +104,7 @@ custom_forest(t_test_res, lipid_class, abundance_level = "high")
 
 <br>  
 
-#### Low abundance linear
+#### Low abundance
 
 ```{r, out.width=c('50%', '50%'), fig.show='hold', fig.height = 6}
 
@@ -112,18 +112,14 @@ custom_barplot(bar_data_linear, lipid_class, abundance_level = "low")
 custom_forest(t_test_res, lipid_class, abundance_level = "low")
 ```
 
+<br> 
+    
+```{r, eval = FALSE}
+# this looks a bit rubbish as there's not much data in it
+t_test_res %>%
+  ggplot(aes(x = ratio, y = -log10(padj)))+
+  geom_point()
+```
+
 <br>
 
-```{r}
-# tukey_data %>%
-#   filter(class == lipid_class) %>%
-#   filter(abundance == "high") %>%
-#   ggplot(aes(x = estimate, y = lipid_name)) +
-#   geom_point(size = 3) +
-#   geom_errorbar(
-#     aes(xmin=conf.low, xmax=conf.high), 
-#     position = position_dodge(width = 0.8), 
-#     width = 0.25,
-#     lwd = 0.8
-#   )
-```
