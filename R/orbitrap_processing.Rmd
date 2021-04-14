@@ -25,15 +25,15 @@ library(tidyverse)
 options(knitr.duplicate.label = "allow")
 source("heatmap_processing.R")
 source("stats.R")
-
-# Need to sort out an extra field in the metadata for paired samples, a rep column
 ```
 
 ```{r import_data}
 metadata <- readr::read_tsv(params$metadata_file)
 all_data <- readr::read_tsv(params$input_file)
 
-all_data <- dplyr::rename(all_data, lipid_name := tidyselect::all_of(params$lipid_name_col))
+all_data <- dplyr::rename(
+  all_data, lipid_name := tidyselect::all_of(params$lipid_name_col)
+)
 ```
 
 ```{r process_data}
@@ -146,8 +146,12 @@ conditions <- unique(tidy_data$condition)
 ratio_wrapper <- function(df, conditions){
   
   if(all(df[[conditions[1]]] == 0) | all(df[[conditions[2]]] == 0)) return (NA)
-  res <- mratios::ttestratio(df[[conditions[1]]], df[[conditions[2]]], alternative="two.sided")
-  #conf <- ttestratio(df[[conditions[1]]], df[[conditions[2]]], alternative="two.sided")$conf.int
+  
+  res <- mratios::ttestratio(
+    df[[conditions[1]]], 
+    df[[conditions[2]]], 
+    alternative="two.sided"
+  )
   
   conf_rat <- c(res$estimate[["x/y"]], res$conf.int)
   paste0(conf_rat, collapse = ",")
@@ -163,6 +167,25 @@ ratios <- tidy_data %>%
   distinct() %>%
   separate(ratio, into = c("x/y", "lower", "upper"), sep = ",", convert = TRUE) %>%
   ungroup()
+  
+ttest_data <- tidy_data %>%
+  group_by(lipid_name) %>%
+  select(class, lipid_name, rep, condition, value) %>%
+  rstatix::t_test(value ~ condition, paired = FALSE) %>%
+  rstatix::adjust_pvalue() 
+
+tukey <- tidy_data %>%
+  group_by(lipid_name) %>%
+  select(class, lipid_name, rep, condition, value, log2_value) %>%
+  #rstatix::tukey_hsd(value ~ condition)
+  rstatix::tukey_hsd(log2_value ~ condition)
+
+emmeans <- tidy_data %>%
+  group_by(lipid_name) %>%
+  select(class, lipid_name, rep, condition, value) %>%
+  rstatix::emmeans_test(value ~ condition) %>%
+  rstatix::adjust_pvalue() 
+
 ```
 
 # {.tabset .tabset-pills}
@@ -204,11 +227,15 @@ bar_data_linear <- bar_data %>%
   distinct() %>%
   left_join(stats_pvals)
 
-ratio_data <- bar_data %>% 
-  select(lipid_name, abundance) %>%
-  distinct() %>%
-  left_join(ratios)
+# ratio_data <- bar_data %>% 
+#   select(lipid_name, abundance) %>%
+#   distinct() %>%
+#   left_join(ratios)
 
+tukey_data <- bar_data %>% 
+  select(lipid_name, abundance, class) %>%
+  distinct() %>%
+  left_join(tukey)
 ```
 
 ```{r, results = "asis"}
@@ -255,7 +282,7 @@ DT::datatable(meta_type, rownames = FALSE, options = list(pageLength = 15, dom =
 </div>
 
 
-## Individual lipids
+## Individual lipids {.active}
 
 #### Scroll down to browse plots for individual lipids or click on the name in the table below to navigate directly to the plot.
 
