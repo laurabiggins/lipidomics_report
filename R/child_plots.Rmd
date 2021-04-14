@@ -1,5 +1,10 @@
 ### `r lipid_to_plot`
 
+```{r, eval = FALSE}
+# to test this
+lipid_to_plot <- "PC 26:0" 
+```
+
 ```{r plotting_functions}
 unpaired_boxplot <- function(data_tib, val = "value"){
   
@@ -37,36 +42,7 @@ paired_lineplot <- function(data_tib, val = "value"){
 ```
 
 
-```{r out.width=c('50%', '50%'), fig.show='hold', eval = FALSE}
-# paired line plot
-if(params$paired){
-  tidy_data %>%
-    filter(lipid_name == lipid_to_plot) %>%
-    mutate(rep = stringr::str_extract(sample_name, "[:digit:]$+")) %>% # assuming the rep is the last digit
-    #tidyr::separate(sample_name, sep = "_", into = c(NA, "rep"), remove = FALSE) %>%
-    ggplot(aes(condition, log2_value, color = rep)) +
-    geom_point(size = 5) +
-    geom_line(aes(group = rep, color = rep), size = 2) +
-    coord_cartesian(xlim = c(1.4, 1.6))
-}
-
-set.seed(1)
-# box and jitter plots
-tidy_data %>%
-  filter(lipid_name == lipid_to_plot) %>%
-  #mutate(rep = stringr::str_extract(sample_name, "[:digit:]$+")) %>% # assuming the rep is the last digit
-  #tidyr::separate(sample_name, sep = "_", into = c(NA, "rep"), remove = FALSE) %>%
-  ggplot(aes(condition, log2_value, color = condition)) +
-  geom_boxplot(width = 0.5, aes(fill = condition), alpha = 0.3, lwd = 2, position= position_dodge2(padding = 0.01)) +
-  
-  geom_jitter(width = 0.1, height = 0, size = 4, color = "black") +
-  ggplot2::scale_color_manual(values = c("#193b85", "#0e876d")) +
-  ggplot2::scale_fill_manual(values = c("#193b85", "#0e876d")) +
-  coord_cartesian(xlim = c(1.2, 1.8))
-```
-
 ```{r}
-#lipid_to_plot <- "PC 26:0"
 one_lipid <- long_stats_pvals %>%
   filter(lipid_name == lipid_to_plot)
 ```
@@ -78,6 +54,7 @@ test <- one_lipid$test_type[1]
 #trans_type <- one_lipid$transform[1]
 set.seed(1)
 
+# create plot depending on the type of test performed
 switch(test, 
       linear_t_test = unpaired_boxplot(one_lipid),
       log2_t_test = unpaired_boxplot(one_lipid, "log2_value"),
@@ -85,7 +62,8 @@ switch(test,
       log2_paired_t_test = paired_lineplot(one_lipid, "log2_value"),
       Welch = unpaired_boxplot(one_lipid),
       one_sample_t_test = unpaired_boxplot(one_lipid),
-      none = unpaired_boxplot(one_lipid)
+      none = unpaired_boxplot(one_lipid),
+      paired_none = paired_lineplot(one_lipid)
       )
 ```
 </div>
@@ -112,7 +90,6 @@ cat(one_lipid$p_val[1])
 small_text <- function(x, size = 12) {
   sprintf("<span style='font-size: %spx;'>%s</span>", size, x)
 }
-#cat(stat_test_info(one_lipid$test_type[1]))
 
 cat(small_text(stat_test_info(one_lipid$test_type[1])))
 ```
