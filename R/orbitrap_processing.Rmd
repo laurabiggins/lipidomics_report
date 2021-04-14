@@ -62,84 +62,9 @@ tidy_data <- all_data %>%
 exp_conditions <- unique(pull(tidy_data, condition))
 ```
 
-
-```{r ratio_stats, eval = FALSE}
-conditions <- unique(tidy_data$condition)
-
-x <- tidy_data %>%
-  group_by(class, lipid_name, condition) %>% 
-  summarise(
-    sum = sum(value),
-    mean = mean(value), 
-    stdev = sd(value),
-    se = sd(value)/sqrt(dplyr::n())
-  ) %>%
-  ungroup() 
-
-ratios_bad <- x %>%
-  group_by(lipid_name) %>%
-  pivot_wider(id_cols = c(lipid_name, condition, sum), 
-    names_from = condition, 
-    values_from = sum,
-  ) %>%
-  mutate(ratio = .data[[conditions[1]]]/.data[[conditions[2]]]) %>%
-  select(lipid_name, ratio) %>%
-  right_join(x) %>%
-  group_by(lipid_name) %>%
-  slice(1)
-```
-
-```{r ttestratio}
-conditions <- unique(tidy_data$condition)
-
-ratio_wrapper <- function(df, conditions){
-  
-  if(all(df[[conditions[1]]] == 0) | all(df[[conditions[2]]] == 0)) return (NA)
-  
-  res <- mratios::ttestratio(
-    df[[conditions[1]]], 
-    df[[conditions[2]]], 
-    alternative="two.sided"
-  )
-  
-  conf_rat <- c(res$estimate[["x/y"]], res$conf.int)
-  paste0(conf_rat, collapse = ",")
-  
-}
-
-ratios <- tidy_data %>%
-  group_by(lipid_name) %>%
-  select(class, lipid_name, rep, condition, value) %>%
-  pivot_wider(names_from = condition, values_from = value) %>%
-  mutate(ratio = ratio_wrapper(cur_data(), conditions = conditions[1:2])) %>%
-  select(class, lipid_name, ratio) %>%
-  distinct() %>%
-  separate(ratio, into = c("x/y", "lower", "upper"), sep = ",", convert = TRUE) %>%
-  ungroup()
-  
-ttest_data <- tidy_data %>%
-  group_by(lipid_name) %>%
-  select(class, lipid_name, rep, condition, value) %>%
-  rstatix::t_test(value ~ condition, paired = FALSE) %>%
-  rstatix::adjust_pvalue() 
-
-tukey <- tidy_data %>%
-  group_by(lipid_name) %>%
-  select(class, lipid_name, rep, condition, value, log2_value) %>%
-  #rstatix::tukey_hsd(value ~ condition)
-  rstatix::tukey_hsd(log2_value ~ condition)
-
-emmeans <- tidy_data %>%
-  group_by(lipid_name) %>%
-  select(class, lipid_name, rep, condition, value) %>%
-  rstatix::emmeans_test(value ~ condition) %>%
-  rstatix::adjust_pvalue() 
-
-```
-
 # {.tabset .tabset-pills}
 
-## Summary plots
+## Summary plots {.active}
 
 ### Bar plots for lipid classes
 These plots show linear mean values for each condition within each lipid subclass. 
@@ -245,7 +170,7 @@ DT::datatable(meta_type, rownames = FALSE, options = list(pageLength = 15, dom =
 </div>
 
 
-## Individual lipids {.active}
+## Individual lipids
 
 #### Scroll down to browse plots for individual lipids or click on the name in the table below to navigate directly to the plot.
 

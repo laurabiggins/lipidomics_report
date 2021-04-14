@@ -27,6 +27,23 @@ custom_barplot <- function(bar_data, lipid_class, abundance_level){
 
 ```
 
+```{r forest_function}
+
+custom_forest <- function(plot_data, lipid_class, abundance_level){
+
+  plot_data %>%
+    filter(class == lipid_class) %>%
+    filter(abundance == abundance_level) %>%
+    ggplot(aes(ratio, lipid_name)) +
+    geom_errorbar(aes(xmin=lower.limit, xmax=upper.limit), width = 0.5, lwd=0.8, show.legend=FALSE)+
+    geom_point(size=3, colour="darkred")+
+    geom_vline(xintercept=0, linetype="dashed", color = "red")+
+    scale_x_continuous(breaks=seq(from =-15, by=1, to=5))
+}  
+```
+
+
+
 ```{r process_bar_data}
 dodge_width <- 0.8
 
@@ -46,15 +63,43 @@ bar_data_linear <- tidy_data %>%
   select(class, lipid_name, mean, condition, se, abundance)
 ```
 
+```{r process_forest_data}
+conditions <- unique(pull(tidy_data, condition))
 
+abundance_data <- bar_data_linear %>%
+  select(lipid_name, abundance) %>%
+  distinct()
+
+
+mean_log2 <- tidy_data %>%
+  dplyr::group_by(lipid_name, condition) %>%
+  dplyr::summarise(
+    mean = mean(log2_value), 
+  ) %>%
+  ungroup() %>%
+  pivot_wider(names_from = condition, values_from = mean) %>%
+  mutate(ratio = .data[[conditions[1]]] - .data[[conditions[2]]])
+
+t_test_res <- tidy_data %>%
+  group_by(class, lipid_name) %>%
+  select(class, lipid_name, rep, condition, log2_value) %>%
+  rstatix::t_test(log2_value ~ condition, paired = FALSE) %>%
+  ungroup() %>%
+  group_by(class) %>%
+  mutate(padj = p.adjust(p, method="BH")) %>%
+  ungroup() %>%
+  mutate(tadj = qt(padj/2, df)) %>%
+  left_join(mean_log2) %>%
+  mutate(SE = abs(ratio/tadj), lower.limit=ratio-1.96*SE, upper.limit=ratio+1.96*SE) %>%
+  left_join(abundance_data)
+```
 
 #### High abundance linear
 
 ```{r, out.width=c('50%', '50%'), fig.show='hold', fig.height = 6}
-lipid_class <- "PC"
 
 custom_barplot(bar_data_linear, lipid_class, abundance_level = "high")
-
+custom_forest(t_test_res, lipid_class, abundance_level = "high")
 ```
 
 <br>  
@@ -64,6 +109,7 @@ custom_barplot(bar_data_linear, lipid_class, abundance_level = "high")
 ```{r, out.width=c('50%', '50%'), fig.show='hold', fig.height = 6}
 
 custom_barplot(bar_data_linear, lipid_class, abundance_level = "low")
+custom_forest(t_test_res, lipid_class, abundance_level = "low")
 ```
 
 <br>
