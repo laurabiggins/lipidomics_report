@@ -84,6 +84,7 @@ switch(test,
       linear_paired_t_test = paired_lineplot(one_lipid),
       log2_paired_t_test = paired_lineplot(one_lipid, "log2_value"),
       Welch = unpaired_boxplot(one_lipid),
+      one_sample_t_test = unpaired_boxplot(one_lipid),
       none = unpaired_boxplot(one_lipid)
       )
 ```
