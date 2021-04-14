@@ -63,36 +63,6 @@ exp_conditions <- unique(pull(tidy_data, condition))
 ```
 
 
-```{r calculate_some_stats}
-# get mean and standard deviation
-mean_stdev <- tidy_data %>%
-  dplyr::group_by(lipid_name, condition) %>%
-  dplyr::summarise(
-    mean = mean(value), 
-    stdev = sd(value),
-    se = sd(value)/sqrt(dplyr::n())
-  ) %>%
-  ungroup()
-  
-fc <- get_fold_change(mean_stdev) 
-
-stats_summary <- mean_stdev %>%
-  group_by(lipid_name) %>%
-  mutate(sd_ratio = get_sd_ratio(cur_data())) %>%
-  mutate(valid_ratio = get_ratio_validity(cur_data())) %>%
-  ungroup() %>%
-  left_join(fc) %>%
-  tidyr::separate(lipid_name, sep = " ", into = c("class", NA), remove = FALSE)
-
-long_stats_pvals <- do_stats(tidy_data, stats_summary, params$paired) 
-
-stats_pvals <- long_stats_pvals %>%
-  select(lipid_name, test_type, p_val) %>%
-  distinct() %>%
-  right_join(stats_summary)
-
-```
-
 ```{r ratio_stats, eval = FALSE}
 conditions <- unique(tidy_data$condition)
 
@@ -186,33 +156,6 @@ class_link <- function(class){
 
 #### `r sapply(lipid_classes, class_link)`
 
-```{r}
-# so we don't have negative values on the barplot
-# add <- if_else(min(log_data$mean) < 0, abs(min(log_data$mean)), 0)
-# bar_data <- mutate(log_data, inflated_mean = mean + add)
-dodge_width <- 0.8
-
-bar_data_linear <- tidy_data %>%
-  dplyr::group_by(class, lipid_name, condition) %>%
-  dplyr::summarise(
-    mean = mean(value),
-    se = sd(value)/sqrt(dplyr::n())
-  ) %>%
-  ungroup() %>%
-  group_by(lipid_name) %>%
-  mutate(min_mean = min(mean)) %>%
-  mutate(max_mean = max(mean)) %>%
-  ungroup() %>%
- # mutate(abundance = if_else(min_mean <= 0, "low", "high"))
-  mutate(abundance = if_else(max_mean <= 1, "low", "high")) %>%
-  select(class, lipid_name, mean, condition, se, abundance)
-
-# tukey_data <- bar_data %>% 
-#   select(lipid_name, abundance, class) %>%
-#   distinct() %>%
-#   left_join(tukey)
-```
-
 ```{r, results = "asis"}
 res <- lapply(lipid_classes, function(lipid_class) {
   knitr::knit_child(
@@ -224,6 +167,46 @@ cat(unlist(res), sep = '\n')
 
 
 ## Summary table
+
+```{r calculate_stats_individual_lipids}
+# get mean and standard deviation
+mean_stdev <- tidy_data %>%
+  dplyr::group_by(lipid_name, condition) %>%
+  dplyr::summarise(
+    mean = mean(value), 
+    stdev = sd(value),
+    se = sd(value)/sqrt(dplyr::n())
+  ) %>%
+  ungroup()
+  
+fc <- get_fold_change(mean_stdev) 
+
+# for calculating the stats per individual lipid - functions are in stats.R 
+stats_summary <- mean_stdev %>%
+  group_by(lipid_name) %>%
+  mutate(sd_ratio = get_sd_ratio(cur_data())) %>%
+  mutate(valid_ratio = get_ratio_validity(cur_data())) %>%
+  ungroup() %>%
+  left_join(fc) %>%
+  tidyr::separate(lipid_name, sep = " ", into = c("class", NA), remove = FALSE)
+
+long_stats_pvals <- do_stats(tidy_data, stats_summary, params$paired) 
+
+# multiple testing correction - by class for now.
+long_stats_pvals <- long_stats_pvals %>%
+  select(lipid_name, class, p_val) %>%
+  distinct() %>%
+  group_by(class) %>%
+  mutate(adj_pval = p.adjust(p_val, method = "BH")) %>%
+  ungroup() %>%
+  left_join(long_stats_pvals)
+
+stats_pvals <- long_stats_pvals %>%
+  select(lipid_name, test_type, p_val, adj_pval) %>%
+  distinct() %>%
+  right_join(stats_summary)
+
+```
 
 ```{r}
 summary_table_data <- stats_pvals %>%
@@ -242,10 +225,15 @@ cols_to_round <- summary_table_data %>%
   dplyr::select(all_of(c(contains("mean"), contains("FC")))) %>%
   colnames()
 
+pvals_to_round <- summary_table_data %>%
+  dplyr::select(all_of(c(contains("p_val"), contains("pval")))) %>%
+  colnames()
+
 summary_table_data %>%
   DT::datatable(rownames = FALSE, options = list(pageLength = 15, dom = "ftlip")) %>%
-  DT::formatRound(digits = 3, cols_to_round)
-
+  DT::formatRound(digits = 3, cols_to_round) %>%
+  DT::formatRound(digits = 5, pvals_to_round)
+  
 ```
 
 ## Metadata
