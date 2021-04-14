@@ -37,6 +37,7 @@ do_stats <- function(tidy_dataset, stats_summary, paired = FALSE){
     right_join(tidy_dataset) %>%
     dplyr::group_by(lipid_name) %>%
     mutate(p_val = do_test(cur_data())) %>%
+    #mutate(adj_pval = p.adjust(p_val, method = "BH")) %>%
     ungroup()
 }
 
@@ -207,7 +208,8 @@ do_test <- function(df){
             log2_paired_t_test = rstatix::t_test(df, log2_value ~ condition, paired = TRUE)$p,
             Welch = rstatix::welch_anova_test(df, value ~ condition)$p,
             one_sample_t_test = one_sample_wrapper(df),
-            none = NA
+            none = NA,
+            paired_none = NA
         )
 }
 
@@ -275,7 +277,7 @@ decide_test <- function(df, paired, threshold = 2) {
             if (valid) {
               test <- "log2_paired_t_test"
             } else {
-              test <- "none"
+              test <- "paired_none"
             }
           }
         } else {
@@ -292,7 +294,8 @@ decide_test <- function(df, paired, threshold = 2) {
       } else if ((any(df$n_non0 <=1) & any(df$n0 == 0))){
         test <- "one_sample_t_test"
       } else {
-        test <- "none"
+        if (paired) test <- "paired_none"
+        else test <- "none"
       }
   } else {
     test <- "anova_if_valid"
@@ -321,6 +324,7 @@ stat_test_info <- function(stat_test){
          log2_paired_t_test = "Paired t-test performed on log2 transformed data. The ratio of standard deviations between the conditions exceeded a threshold and so the data was log2 transformed. The samples were paired.",
          Welch = "Welch t-test performed on linear data. The condition with the smaller mean had a higher standard deviation so a Welch t-test was performed. The samples were not paired.",
          one_sample_t_test = "The data did not meet the criteria for performing a two sample t-test. One of the conditions had almost all 0 values, so a one-sample t-test was performed for the other condition. The results of this test may not be very robust and the plot should be viewed carefully to understand the data.",
-         none = "The data did not meet the criteria for performing a statistical test. There may have been too few non-zero values or the variance of a condition may have been too high."
+         none = "The data did not meet the criteria for performing a statistical test. There may have been too few non-zero values or the variance of a condition may have been too high.",
+         paired_none = "The data did not meet the criteria for performing a statistical test. There may have been too few non-zero values or the variance of a condition may have been too high."
          )
 }
