@@ -6,16 +6,16 @@ output:
     keep_md: true
 output_file: lip
 params: 
-  #metadata_file: ../data/metadata.txt
-  #input_file: ../data/alldata.lipidomics_summary_test_data.tsv
-  input_file: D:/projects/lipidomics/example_data/Mouse-Ear-Serum/Ear_alldata.lipidomics_summary_ACSL4.tsv
-  metadata_file: D:/projects/lipidomics/example_data/Mouse-Ear-Serum/metadata_ALL.tsv
+  metadata_file: ../data/metadata.txt
+  input_file: ../data/alldata.lipidomics_summary_test_data.tsv
+  #input_file: D:/projects/lipidomics/example_data/Mouse-Ear-Serum/Ear_alldata.lipidomics_summary_ACSL4.tsv
+  #metadata_file: D:/projects/lipidomics/example_data/Mouse-Ear-Serum/metadata_ALL.tsv
   meta_sample_name: SampleName
   meta_condition_type: Type
   meta_rep: Rep
   lipid_name_col: X1
-  #paired: TRUE
-  paired: FALSE
+  paired: TRUE
+  #paired: FALSE
 
 ---
 
@@ -112,6 +112,51 @@ bar_data_linear <- tidy_data %>%
   select(class, lipid_name, mean, condition, se, abundance)
 ```
 
+```{r calculate_stats_individual_lipids}
+# get mean and standard deviation
+#mean_stdev <- tidy_data %>%
+#   dplyr::group_by(lipid_name, condition) %>%
+#   dplyr::summarise(mean = mean(value)) %>%
+#   ungroup()
+# 
+#   
+# fc <- get_fold_change(mean_stdev) 
+# stats_summary <- left_join(mean_stdev, fc)
+#long_stats_pvals <- do_stats(tidy_data, stats_summary, params$paired)
+
+# for calculating the stats per individual lipid - functions are in stats.R 
+long_stats_pvals <- do_stats(tidy_data, params$paired)
+
+# multiple testing correction - by class for now.
+long_stats_pvals <- long_stats_pvals %>%
+  select(lipid_name, class, p_val) %>%
+  distinct() %>%
+  group_by(class) %>%
+  mutate(adj_pval = p.adjust(p_val, method = "BH")) %>%
+  ungroup() %>%
+  left_join(long_stats_pvals)
+
+
+fc <- tidy_data %>%
+  dplyr::group_by(lipid_name, condition) %>%
+  dplyr::summarise(log2_mean = mean(log2_value)) %>%
+  ungroup() %>%
+  pivot_wider(names_from = condition, names_prefix = "log2_mean_", values_from = log2_mean) %>%
+  mutate(log2_fc = .data[[paste0("log2_mean_", exp_conditions[1])]] - .data[[paste0("log2_mean_", exp_conditions[2])]])
+
+stats_pvals <- long_stats_pvals %>%
+  select(class, lipid_name, test_type, p_val, adj_pval) %>%
+  distinct() %>%
+  right_join(fc)
+
+two_sample_t_test_lipids <- stats_pvals %>%
+  filter(test_type %in% c("independent_t_test", "paired_t_test")) %>%
+  select(lipid_name) %>%
+  distinct() %>%
+  pull()
+```
+
+
 ```{r process_forest_data}
 # all the data is log transformed for the forest plots
 conditions <- unique(pull(tidy_data, condition))
@@ -129,10 +174,15 @@ mean_log2 <- tidy_data %>%
   pivot_wider(names_from = condition, values_from = mean) %>%
   mutate(ratio = .data[[conditions[1]]] - .data[[conditions[2]]])
 
+# the p-values should match those in the summary table/individual lipids. It's easier doing the stats separately
+# here as we need some of the t-statistic values for the forest plot. Then afterwards, we filter for the lipids
+# that met test assumptions. The multiple testing correction is probably a bit harsh though - we're currently
+# including the lipids with "none" tests. 
+# 
 t_test_res <- tidy_data %>%
   group_by(class, lipid_name) %>%
   select(class, lipid_name, condition, log2_value) %>%
-  rstatix::t_test(log2_value ~ condition, paired = FALSE) %>%
+  rstatix::t_test(log2_value ~ condition, paired = params$paired) %>%
   ungroup() %>%
   group_by(class) %>%
   mutate(padj = p.adjust(p, method="BH")) %>%
@@ -140,9 +190,11 @@ t_test_res <- tidy_data %>%
   mutate(tadj = qt(padj/2, df)) %>%
   left_join(mean_log2) %>%
   mutate(SE = abs(ratio/tadj), lower.limit=ratio-1.96*SE, upper.limit=ratio+1.96*SE) %>%
-  left_join(abundance_data)
+  left_join(abundance_data) %>%
+  filter(lipid_name %in% two_sample_t_test_lipids) 
 ```
   
+
 ```{r}
 # for if there are loads and we want a link to the plot further down the page
 lipid_classes <- unique(tidy_data$class)
@@ -208,76 +260,23 @@ qqnorm(removed_0$value)
 qqnorm(removed_0$log2_value)
 
 
-qqnorm(removed_0$value, main = "linear/raw")
-qqline(removed_0$value, col = "red", lwd = 2)
 
-qqnorm(removed_0$log2_value, main = "log2 transformed")
-qqline(removed_0$log2_value, col = "red", lwd = 2)
 
 qqnorm(log10(removed_0$value), main = "log10 transformed")
 qqline(log10(removed_0$value), col = "red", lwd = 2)
 ```
 
 
-```{r calculate_stats_individual_lipids}
-# get mean and standard deviation
-mean_stdev <- tidy_data %>%
-  dplyr::group_by(lipid_name, condition) %>%
-  dplyr::summarise(
-    mean = mean(value), 
-    stdev = sd(value),
-    se = sd(value)/sqrt(dplyr::n())
-  ) %>%
-  ungroup()
-  
-fc <- get_fold_change(mean_stdev) 
-
-# for calculating the stats per individual lipid - functions are in stats.R 
-stats_summary <- mean_stdev %>%
-  group_by(lipid_name) %>%
-  mutate(sd_ratio = get_sd_ratio(cur_data())) %>%
-  mutate(valid_ratio = get_ratio_validity(cur_data())) %>%
-  ungroup() %>%
-  left_join(fc) %>%
-  tidyr::separate(lipid_name, sep = " ", into = c("class", NA), remove = FALSE)
-
-long_stats_pvals <- do_stats(tidy_data, stats_summary, params$paired) 
-
-# multiple testing correction - by class for now.
-long_stats_pvals <- long_stats_pvals %>%
-  select(lipid_name, class, p_val) %>%
-  distinct() %>%
-  group_by(class) %>%
-  mutate(adj_pval = p.adjust(p_val, method = "BH")) %>%
-  ungroup() %>%
-  left_join(long_stats_pvals)
-
-stats_pvals <- long_stats_pvals %>%
-  select(lipid_name, test_type, p_val, adj_pval) %>%
-  distinct() %>%
-  right_join(stats_summary)
-
-```
-
 ```{r}
 summary_table_data <- stats_pvals %>%
-  select(-contains("ratio"), -stdev, -se) %>%
-  dplyr::relocate(class) %>%
-  pivot_wider(names_from = condition, names_prefix = "mean_", values_from = mean) 
-
-log2_fc <- summary_table_data %>%
-  select(starts_with("FC")) %>%
-  log2() %>%
-  rename_with(~ paste0("log2_", .x))
-
-summary_table_data <- cbind(summary_table_data, log2_fc)
+  select(-p_val)
 
 cols_to_round <- summary_table_data %>%
   dplyr::select(all_of(c(contains("mean"), contains("FC")))) %>%
   colnames()
 
 pvals_to_round <- summary_table_data %>%
-  dplyr::select(all_of(c(contains("p_val"), contains("pval")))) %>%
+  dplyr::select(all_of(c(contains("pval")))) %>%
   colnames()
 
 summary_table_data %>%
@@ -289,12 +288,57 @@ summary_table_data %>%
 
 ## Metadata
 
+<div class = "row">
 <div class = "col-md-6">
 ```{r}
 DT::datatable(meta_type, rownames = FALSE, options = list(pageLength = 15, dom = "tp"))
 ```
 </div>
+</div>
+<br>
+   
+### QQ plots of all data  
+  
+0 values have been removed.  
 
+```{r, out.width=c('50%', '50%'), fig.show='hold', fig.height = 6}
+removed_0 <- tidy_data %>%
+  filter(value > 0)
+
+qqnorm(removed_0$value, main = "linear/raw")
+qqline(removed_0$value, col = "red", lwd = 2)
+
+qqnorm(removed_0$log2_value, main = "log2 transformed")
+qqline(removed_0$log2_value, col = "red", lwd = 2)
+```
+
+###  
+
+```{r}
+phospholipids <- c('PA', 'PC', 'PE', 'PG', 'PI', 'PS', 'CL')
+lysolipids <- c('LPA', 'LPC', 'LPE', 'LPG', 'LPI', 'LPS')
+sphingolipids <- c('SG', 'SM', 'dhSM', 'dhCer', 'Cer')
+neutral_lipids <- c("TG", "DA")
+
+superclasses <- tibble::enframe(
+  c(
+    setNames(phospholipids, rep("phospholipids", length(phospholipids))),
+    setNames(lysolipids, rep("lysolipids", length(lysolipids))),
+    setNames(sphingolipids, rep("sphingolipids", length(sphingolipids))),
+    setNames(neutral_lipids, rep("neutral_lipids", length(neutral_lipids)))
+  ), name = "superclass", value = "class"
+)
+
+
+
+p <- t_test_res %>%
+  left_join(superclasses) %>%
+  ggplot(aes(x = ratio, y = -log10(padj), col = superclass, annotation = lipid_name)) +
+  geom_point() +
+  theme(legend.title = element_blank())
+
+plotly::ggplotly(p, tooltip = "lipid_name")
+```
 
 ## Individual lipids
 
@@ -310,20 +354,19 @@ get_link <- function(lipid){
 
 summary_table_data %>%
   dplyr::mutate(lipid_name = get_link(lipid_name)) %>%
-  #select(-fold_change) %>%
   DT::datatable(
     rownames = FALSE, 
     options = list(pageLength = 5, dom = "tlip"), 
     filter = list(position = "top"),
     escape = FALSE) %>%
-  #DT::formatRound(5:7, digits = 3)
-  DT::formatRound(digits = 3, cols_to_round)
+  DT::formatRound(digits = 3, cols_to_round) %>%
+  DT::formatRound(digits = 5, pvals_to_round)
   
 ```
 
 ```{r, results = "asis"}
-res <- lapply(unique(tidy_data$lipid_name)[1:3], function(lipid_to_plot) { # to speed up tests
-#res <- lapply(unique(tidy_data$lipid_name), function(lipid_to_plot) {
+#res <- lapply(unique(tidy_data$lipid_name)[1:3], function(lipid_to_plot) { # to speed up tests
+res <- lapply(unique(tidy_data$lipid_name), function(lipid_to_plot) {
   knitr::knit_child(
     "child_plots.Rmd", envir = environment(), quiet = TRUE
   )
@@ -346,11 +389,13 @@ totals <- tidy_data %>%
 ```{r}
 totals %>%
   ggplot(aes(x = class, y = total, fill = condition)) + 
-  geom_bar(colour = "black", 
-           position= position_dodge(width = 0.8),
-           width = 0.8,
-           stat="identity",
-           lwd = 0.8) + 
+  geom_bar(
+    colour = "black", 
+    position= position_dodge(width = 0.8),
+    width = 0.8,
+    stat="identity",
+    lwd = 0.8
+  ) + 
   scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, face = "bold")) +
@@ -362,11 +407,13 @@ totals %>%
 ```{r}
 totals %>%
   ggplot(aes(x = class, y = log2_total, fill = condition)) + 
-  geom_bar(colour = "black", 
-           position= position_dodge(width = 0.8),
-           width = 0.8,
-           stat="identity",
-           lwd = 0.8) + 
+  geom_bar(
+    colour = "black", 
+    position= position_dodge(width = 0.8),
+    width = 0.8,
+    stat="identity",
+    lwd = 0.8
+  ) + 
   scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, face = "bold")) +
@@ -376,8 +423,6 @@ totals %>%
 ## Heatmap
 
 ```{r, heatmap_processing}
-#matrix_data <- remove_0_variance(all_data)
-
 var_above0 <- all_data %>%
   pivot_longer(-lipid_name) %>%
   group_by(lipid_name) %>%
@@ -387,7 +432,6 @@ var_above0 <- all_data %>%
   left_join(all_data)
 
 heatmap_data <- tibble::column_to_rownames(var_above0, "lipid_name")
- 
 ```  
 
 ```{r, plot_heatmap}
@@ -413,15 +457,36 @@ lipid_labels <- create_lipid_class_labels(lipid_summary, nrow(df_lipids))
 lipid_colours <- create_lipid_colours(
   class_names = dplyr::pull(lipid_summary, class)
 )
-group_colours <- stats::setNames(c("blue", "green"), exp_conditions)
+group_colours <- stats::setNames(c("blue", "darkgreen"), exp_conditions)
 
 annot_colours <- list(
-  value = group_colours,
+  condition = group_colours,
   class = lipid_colours
 )
 ```
 
-### Heatmap ordered by lipid subclass
+
+### Rows ordered by lipid subclass, columns ordered by condition, no clustering
+
+```{r, fig.height = 8, fig.width = 10}
+pheatmap::pheatmap(
+  heatmap_data,
+  scale = "row",
+  annotation_row = row_annotation,
+  annotation_col = col_annotation,
+  cluster_rows = FALSE,
+  cluster_cols = FALSE,
+  labels_row = lipid_labels,
+  fontsize_row = 8,
+  annotation_colors = annot_colours#,
+  #annotation_legend = FALSE
+)
+```
+
+<br>
+<br>
+
+### Rows ordered by lipid subclass, clustered by columns
 
 ```{r, fig.height = 8, fig.width = 10}
 pheatmap::pheatmap(
@@ -440,14 +505,17 @@ pheatmap::pheatmap(
 <br>
 <br>
 
-### With row clustering
+### With row clustering and column clustering
 
 ```{r, fig.height = 8, fig.width = 10}
+too_many_names <- if_else(nrow(heatmap_data) > 70, FALSE, TRUE)
+
 pheatmap::pheatmap(
   heatmap_data,
   scale = "row",
   annotation_row = row_annotation,
   annotation_col = col_annotation,
-  annotation_colors = annot_colours
+  annotation_colors = annot_colours, 
+  show_rownames = too_many_names
 )
 ```
