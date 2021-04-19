@@ -1,8 +1,6 @@
 # We have various permutations of samples so need appropriate stats. 
 # assume data is normally distributed - there's no point doing a test for normality 
 # as there are so few values per sample.
-# 
-
 
 
 #' Do stats
@@ -41,48 +39,6 @@ do_stats <- function(tidy_dataset, stats_summary, paired = FALSE){
     ungroup()
 }
 
-
-#' For calculating standard deviation ratio between 2 condition types
-#'
-#' @param df with column names that must include lipid_name, condition, stdev
-#'
-#' @return tibble containing columns lipid name, sd_ratio
-#' @export
-#'
-#' @examples
-get_sd_ratio <- function(df){
-  
-  conditions <- unique(df$condition)
-  assertthat::assert_that(
-    nrow(df) == 2, 
-    msg = paste0("expected to find 2 conditions, actually found ", conditions)
-  )
-  
-  max(df$stdev)/min(df$stdev)
-}
-
-
-#' get sd ratio validity
-#' 
-#' To be used alongside get_sd_ratio, and with the same input data, it was just 
-#' easier to have the function return a single value.
-#' This checks if the larger standard deviation also has the larger mean 
-#'
-#' @param df tibble/dataframe containing columns named "mean", "stdev" and "condition"
-#'
-#' @return TRUE or FALSE value
-#' @export
-#'
-#' @examples
-get_ratio_validity <- function(df){
-  
-  conditions <- unique(df$condition)
-  assertthat::assert_that(
-    nrow(df) == 2, 
-    msg = paste0("expected to find 2 conditions, actually found ", conditions)
-  )
-  which.max(df$mean) == which.max(df$stdev)
-}
 
 #' get_fold_change
 #' 
