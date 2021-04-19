@@ -6,14 +6,16 @@ output:
     keep_md: true
 output_file: lip
 params: 
-  metadata_file: ../data/metadata.txt
-  input_file: ../data/alldata.lipidomics_summary_test_data.tsv
-  #input_file: x
+  #metadata_file: ../data/metadata.txt
+  #input_file: ../data/alldata.lipidomics_summary_test_data.tsv
+  input_file: D:/projects/lipidomics/example_data/Mouse-Ear-Serum/Ear_alldata.lipidomics_summary_ACSL4.tsv
+  metadata_file: D:/projects/lipidomics/example_data/Mouse-Ear-Serum/metadata_ALL.tsv
   meta_sample_name: SampleName
   meta_condition_type: Type
   meta_rep: Rep
   lipid_name_col: X1
-  paired: TRUE
+  #paired: TRUE
+  paired: FALSE
 
 ---
 
@@ -34,6 +36,12 @@ all_data <- readr::read_tsv(params$input_file)
 all_data <- dplyr::rename(
   all_data, lipid_name := tidyselect::all_of(params$lipid_name_col)
 )
+
+#all_data[1,2] <- NA
+
+all_data <- all_data %>%
+  replace(is.na(.), 0)
+
 ```
 
 ```{r process_data}
@@ -54,12 +62,19 @@ if(params$paired) {
 
 tidy_data <- all_data %>%
   tidyr::pivot_longer(cols = -lipid_name, names_to = "sample_name") %>%
+  replace(is.na(.), 0) %>%
   tidyr::separate(lipid_name, sep = " ", into = c("class", NA), remove = FALSE) %>%
   left_join(meta_type) %>%
   dplyr::mutate(log2_value = log2(value)) %>%
   dplyr::mutate(log2_value = if_else(log2_value == "-Inf", 0, log2_value)) # we don't want -Inf values
 
 exp_conditions <- unique(pull(tidy_data, condition))
+
+# this script can only cope with 2 experimental conditions, so we'll remove any extras
+tidy_data <- tidy_data %>%
+  filter(condition %in% exp_conditions[1:2])
+exp_conditions <- exp_conditions[1:2]
+
 ```
 
 # {.tabset .tabset-pills}
@@ -68,12 +83,65 @@ exp_conditions <- unique(pull(tidy_data, condition))
 
 ### Bar plot information
 The bar plots show linear mean values for each condition within each lipid subclass. They are split between low and high abundance values, where low abundance refers to lipid subclasses with value < 1 in either condition.
-The errorbars show the standard error of the mean.   
-### Forest plot information  
+The errorbars show the standard error of the mean.     
+   
+### Forest plot information    
 The plots on the right show log2 ratios between the 2 conditions, the red point shows the ratio while the lines show the confidence interval.
 
 
 More information can be found in the other tabs in the report.
+
+```{r process_bar_data}
+# this needs to be done here, not in the bar_plot Rmd file, so that it is only 
+# run once
+dodge_width <- 0.8
+
+bar_data_linear <- tidy_data %>%
+  dplyr::group_by(class, lipid_name, condition) %>%
+  dplyr::summarise(
+    mean = mean(value),
+    se = sd(value)/sqrt(dplyr::n())
+  ) %>%
+  ungroup() %>%
+  group_by(lipid_name) %>%
+  mutate(min_mean = min(mean)) %>%
+  mutate(max_mean = max(mean)) %>%
+  ungroup() %>%
+ # mutate(abundance = if_else(min_mean <= 1, "low", "high"))
+  mutate(abundance = if_else(max_mean <= 1, "low", "high")) %>%
+  select(class, lipid_name, mean, condition, se, abundance)
+```
+
+```{r process_forest_data}
+# all the data is log transformed for the forest plots
+conditions <- unique(pull(tidy_data, condition))
+
+abundance_data <- bar_data_linear %>%
+  select(lipid_name, abundance) %>%
+  distinct()
+
+mean_log2 <- tidy_data %>%
+  dplyr::group_by(lipid_name, condition) %>%
+  dplyr::summarise(
+    mean = mean(log2_value), 
+  ) %>%
+  ungroup() %>%
+  pivot_wider(names_from = condition, values_from = mean) %>%
+  mutate(ratio = .data[[conditions[1]]] - .data[[conditions[2]]])
+
+t_test_res <- tidy_data %>%
+  group_by(class, lipid_name) %>%
+  select(class, lipid_name, condition, log2_value) %>%
+  rstatix::t_test(log2_value ~ condition, paired = FALSE) %>%
+  ungroup() %>%
+  group_by(class) %>%
+  mutate(padj = p.adjust(p, method="BH")) %>%
+  ungroup() %>%
+  mutate(tadj = qt(padj/2, df)) %>%
+  left_join(mean_log2) %>%
+  mutate(SE = abs(ratio/tadj), lower.limit=ratio-1.96*SE, upper.limit=ratio+1.96*SE) %>%
+  left_join(abundance_data)
+```
   
 ```{r}
 # for if there are loads and we want a link to the plot further down the page
@@ -84,7 +152,6 @@ class_link <- function(class){
 ```
   
 #### `r purrr::map_chr(lipid_classes, class_link)`
-   
    
 ```{r, results = "asis"}
 res <- lapply(lipid_classes, function(lipid_class) {
@@ -97,6 +164,60 @@ cat(unlist(res), sep = '\n')
 
 
 ## Summary table
+
+```{r, eval = FALSE}
+# deciding whether to log2 transform the data (by class)
+stdev_ratios <- tidy_data %>%
+  dplyr::group_by(class, condition) %>%
+  dplyr::summarise(stdev = sd(value)) %>%
+  ungroup() %>%
+  group_by(class) %>%
+  mutate(stdev_ratio = max(stdev)/min(stdev)) %>%
+  select(class, stdev_ratio) %>%
+  distinct() %>%
+  deframe()
+
+# stdev ratio check by entire dataset
+tidy_data %>%
+  filter(condition == exp_conditions[1]) %>%
+  select(lipid_name, sample_name, value) %>%
+  mutate(abundance = if_else(value <= 1, "low", "high")) %>%
+  group_by(abundance) %>%
+  dplyr::summarise(stdev = sd(value)) %>%
+  mutate(stdev_ratio = max(stdev)/min(stdev)) 
+
+shapiro.test(tidy_data$value)
+shapiro.test(tidy_data$log2_value)
+
+plot(density(tidy_data$value))
+plot(density(tidy_data$log2_value))
+
+removed_0 <- tidy_data %>%
+  filter(value > 0)
+
+shapiro.test(removed_0$value)
+shapiro.test(removed_0$log2_value)
+
+removed_0 %>%
+  rstatix::shapiro_test(value, log2_value)
+
+plot(density(removed_0$value))
+plot(density(removed_0$log2_value))
+
+qqnorm(removed_0$value)
+qqnorm(removed_0$log2_value)
+
+
+qqnorm(removed_0$value, main = "linear/raw")
+qqline(removed_0$value, col = "red", lwd = 2)
+
+qqnorm(removed_0$log2_value, main = "log2 transformed")
+qqline(removed_0$log2_value, col = "red", lwd = 2)
+
+qqnorm(log10(removed_0$value), main = "log10 transformed")
+qqline(log10(removed_0$value), col = "red", lwd = 2)
+```
+
 
 ```{r calculate_stats_individual_lipids}
 # get mean and standard deviation
@@ -216,8 +337,13 @@ cat(unlist(res), sep = '\n')
 totals <- tidy_data %>%
   group_by(class, condition) %>%
   summarise(total = sum(value)) %>%
-  ungroup()
+  ungroup() %>%
+  mutate(log2_total = log2(total))
+```
 
+### Linear scale
+
+```{r}
 totals %>%
   ggplot(aes(x = class, y = total, fill = condition)) + 
   geom_bar(colour = "black", 
@@ -231,6 +357,21 @@ totals %>%
   xlab("")
 ```
 
+### Log2 scale   
+  
+```{r}
+totals %>%
+  ggplot(aes(x = class, y = log2_total, fill = condition)) + 
+  geom_bar(colour = "black", 
+           position= position_dodge(width = 0.8),
+           width = 0.8,
+           stat="identity",
+           lwd = 0.8) + 
+  scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, face = "bold")) +
+  xlab("")
+```
   
 ## Heatmap
 
