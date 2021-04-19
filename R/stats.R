@@ -183,8 +183,8 @@ get_fold_change_2_conditions <- function(df){
 #' performs test on data depending on the type defined in the "test_type" column.
 #'
 #' @param df with a column named condition and one named test_type
-#' that contains values of "none", "linear_t_test", "log2_t_test", "linear_paired_t-test",
-#' "log2_paired_t-test", "Welch", "anova"
+#' that contains values of "independent_t_test", "paired_t-test",
+#' "one_sample_t_test", "none", "paired_none"
 #'
 #' @return p-value
 #' @export
@@ -202,14 +202,11 @@ do_test <- function(df){
   test <- df$test_type[1]
   
   switch(test,
-            linear_t_test = rstatix::t_test(df, value ~ condition, paired = FALSE)$p,
-            log2_t_test = rstatix::t_test(df, log2_value ~ condition, paired = FALSE)$p,
-            linear_paired_t_test = rstatix::t_test(df, value ~ condition, paired = TRUE)$p,
-            log2_paired_t_test = rstatix::t_test(df, log2_value ~ condition, paired = TRUE)$p,
-            Welch = rstatix::welch_anova_test(df, value ~ condition)$p,
-            one_sample_t_test = one_sample_wrapper(df),
-            none = NA,
-            paired_none = NA
+        independent_t_test = rstatix::t_test(df, log2_value ~ condition, paired = FALSE)$p,
+        paired_t_test = rstatix::t_test(df, log2_value ~ condition, paired = TRUE)$p,
+        one_sample_t_test = one_sample_wrapper(df),
+        none = NA,
+        paired_none = NA
         )
 }
 
@@ -249,6 +246,7 @@ one_sample_wrapper <- function(df){
 #' non-zero values, in addition to columns named sd_ratio and valid_ratio that 
 #' contain the ratio of standard deviations between conditions and whether that
 #' ratio is valid (see get_sd_ratio and get_ratio_validity) 
+#' valid is TRUE if the larger standard deviation also has the larger mean 
 #' 
 #' @param paired TRUE or FALSE - whether the samples are paired or not
 #' @param threshold integer value. standard deviation ratio threshold
@@ -266,30 +264,12 @@ decide_test <- function(df, paired, threshold = 2) {
   } else if (nrow(df) == 2){
     
       sufficient_values <- df$n_non0 >= 2 & df$n0 <= 1 
-      ratio <- df$sd_ratio[1]
-      valid <- df$valid_ratio[1]
-      
+
       if (all(sufficient_values)) {
         if (paired) {
-          if (ratio < threshold) {
-            test <- "linear_paired_t_test"
-          } else {
-            if (valid) {
-              test <- "log2_paired_t_test"
-            } else {
-              test <- "paired_none"
-            }
-          }
+           test <- "paired_t_test"
         } else {
-          if (valid) {
-            if (ratio < threshold) {
-              test <- "linear_t_test"
-            } else {
-              test <- "log2_t_test"
-            }
-          } else {
-            test <- "Welch"
-          }
+           test <- "independent_t_test"
         }
       } else if ((any(df$n_non0 <=1) & any(df$n0 == 0))){
         test <- "one_sample_t_test"
@@ -298,7 +278,7 @@ decide_test <- function(df, paired, threshold = 2) {
         else test <- "none"
       }
   } else {
-    test <- "anova_if_valid"
+    test <- "none"
   }
   test
 }            
@@ -317,14 +297,12 @@ decide_test <- function(df, paired, threshold = 2) {
 stat_test_info <- function(stat_test){
   
   switch(stat_test, 
-         linear_t_test = "Independent t-test performed on linear data. 
-         The ratio of standard deviations between the conditions was small enough that the data did not need to be log transformed. The samples were not paired.",
-         log2_t_test = "Independent t-test performed on log2 transformed data. The ratio of standard deviations between the conditions exceeded a threshold and so the data was log2 transformed. The samples were not paired.",
-         linear_paired_t_test = "Paired t-test performed on linear data. \n The ratio of standard deviations between the conditions was small enough that the data did not need to be log transformed. \n The samples were paired.",
-         log2_paired_t_test = "Paired t-test performed on log2 transformed data. The ratio of standard deviations between the conditions exceeded a threshold and so the data was log2 transformed. The samples were paired.",
-         Welch = "Welch t-test performed on linear data. The condition with the smaller mean had a higher standard deviation so a Welch t-test was performed. The samples were not paired.",
-         one_sample_t_test = "The data did not meet the criteria for performing a two sample t-test. One of the conditions had almost all 0 values, so a one-sample t-test was performed for the other condition. The results of this test may not be very robust and the plot should be viewed carefully to understand the data.",
-         none = "The data did not meet the criteria for performing a statistical test. There may have been too few non-zero values or the variance of a condition may have been too high.",
-         paired_none = "The data did not meet the criteria for performing a statistical test. There may have been too few non-zero values or the variance of a condition may have been too high."
-         )
+     independent_t_test = "Independent t-test. Data were log transformed to meet the assumptions for parametric tests.",
+     paired_t_test = "Paired t-test. Data were log transformed to meet the assumptions for parametric tests.",
+     one_sample_t_test = "The data did not meet the criteria for performing a two sample t-test. One of the conditions had almost all 0 values, so a one-sample t-test was performed for the other condition. The results of this test may not be very robust and the plot should be viewed carefully to understand the data.",
+     none = "The data did not meet the criteria for performing a statistical test. There may have been too few non-zero values or the variance of a condition may have been too high.",
+     paired_none = "The data did not meet the criteria for performing a statistical test. There may have been too few non-zero values or the variance of a condition may have been too high."
+     )
 }
+
+

@@ -60,11 +60,8 @@ set.seed(1)
 
 # create plot depending on the type of test performed
 switch(test, 
-      linear_t_test = unpaired_boxplot(one_lipid),
-      log2_t_test = unpaired_boxplot(one_lipid, "log2_value"),
-      linear_paired_t_test = paired_lineplot(one_lipid),
-      log2_paired_t_test = paired_lineplot(one_lipid, "log2_value"),
-      Welch = unpaired_boxplot(one_lipid),
+      independent_t_test = unpaired_boxplot(one_lipid, "log2_value"),
+      paired_t_test = paired_lineplot(one_lipid, "log2_value"),
       one_sample_t_test = unpaired_boxplot(one_lipid),
       none = unpaired_boxplot(one_lipid),
       paired_none = paired_lineplot(one_lipid)
@@ -79,10 +76,16 @@ switch(test,
 <br>  
 
 ```{r neaten_test}
-neat_test <- gsub(x = test, "_", " ")
+test_name_for_report <- switch(test, 
+      independent_t_test = "Independent t-test",
+      paired_t_test = "Paired t-test",
+      one_sample_t_test = "One sample t-test",
+      none = "none",
+      paired_none = "none"
+      )
 ```
 
-#### Test performed: `r neat_test`  
+#### Test performed: `r test_name_for_report`  
 
 #### p-value (uncorrected) : `r one_lipid$p_val[1]`    
 ```{r, results="asis", eval = FALSE}
