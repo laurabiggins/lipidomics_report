@@ -17,26 +17,26 @@
 #' @export
 #'
 #' @examples
-do_stats <- function(tidy_dataset, stats_summary, paired = FALSE){
+#do_stats <- function(tidy_dataset, stats_summary, paired = FALSE){
+do_stats <- function(tidy_dataset, paired = FALSE){  
   
   n_counts <-  tidy_dataset %>%
     dplyr::group_by(lipid_name, condition) %>%
     summarise(n_values = n(), n_non0 = sum(value > 0), n0 = sum(value == 0)) %>%
     ungroup() 
 
-  #browser()
-      
- x <- left_join(n_counts, stats_summary) %>%
-    group_by(lipid_name) %>%
-    mutate(test_type = decide_test(cur_data(), paired)) %>%
-    ungroup() %>%
-    select(lipid_name, test_type) %>%
-    distinct() %>%
-    right_join(tidy_dataset) %>%
-    dplyr::group_by(lipid_name) %>%
-    mutate(p_val = do_test(cur_data())) %>%
-    #mutate(adj_pval = p.adjust(p_val, method = "BH")) %>%
-    ungroup()
+ n_counts %>%
+   group_by(lipid_name) %>%
+   mutate(test_type = decide_test(cur_data(), paired)) %>%
+   ungroup() %>%
+   select(lipid_name, test_type) %>%
+   distinct() %>%
+   right_join(tidy_dataset) %>%
+   dplyr::group_by(lipid_name) %>%
+   mutate(p_val = do_test(cur_data())) %>%
+   #mutate(adj_pval = p.adjust(p_val, method = "BH")) %>%
+   ungroup()
+ 
 }
 
 
@@ -223,8 +223,8 @@ decide_test <- function(df, paired, threshold = 2) {
 stat_test_info <- function(stat_test){
   
   switch(stat_test, 
-     independent_t_test = "Independent t-test. Data were log transformed to meet the assumptions for parametric tests.",
-     paired_t_test = "Paired t-test. Data were log transformed to meet the assumptions for parametric tests.",
+     independent_t_test = "Independent t-test performed on log2 transformed data. The samples were not paired/matched.",
+     paired_t_test = "Paired t-test performed on log2 transformed data. The samples were paired/matched.",
      one_sample_t_test = "The data did not meet the criteria for performing a two sample t-test. One of the conditions had almost all 0 values, so a one-sample t-test was performed for the other condition. The results of this test may not be very robust and the plot should be viewed carefully to understand the data.",
      none = "The data did not meet the criteria for performing a statistical test. There may have been too few non-zero values or the variance of a condition may have been too high.",
      paired_none = "The data did not meet the criteria for performing a statistical test. There may have been too few non-zero values or the variance of a condition may have been too high."
