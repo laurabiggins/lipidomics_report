@@ -41,36 +41,6 @@ do_stats <- function(tidy_dataset, stats_summary, paired = FALSE){
     ungroup()
 }
 
-# y <- left_join(n_counts, stats_summary) %>%
-#   group_by(lipid_name) %>%
-#   mutate(test_type = decide_test(cur_data(), paired)) %>%
-#   ungroup() %>%
-#   select(lipid_name, test_type) %>%
-#   distinct() %>%
-#   right_join(tidy_dataset) %>%
-#   filter(lipid_name == "PC 38:1")
-# 
-#   dplyr::group_by(lipid_name) %>%
-#   mutate(p_val = do_test(cur_data())) %>%
-#   ungroup()
-
-
-
-#  y <- left_join(n_counts, stats_summary) %>%
-#   group_by(lipid_name) %>%
-#   mutate(test_type = decide_test(cur_data())) %>%
-#   # slice(1) %>%
-#   ungroup() %>%
-#   select(lipid_name, test_type) %>%
-#   right_join(tidy_dataset) %>%
-#   #dplyr::group_by(lipid_name) %>%
-#   slice(1:12)
-# 
-# 
-#y <- left_join(n_counts, stats_summary) %>%
-#   slice(1:2)
-
- 
 
 #' For calculating standard deviation ratio between 2 condition types
 #'
