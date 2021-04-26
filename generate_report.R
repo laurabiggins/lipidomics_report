@@ -1,59 +1,36 @@
-# rmarkdown::render(
-#   "orbitrap_processing.Rmd", 
-#   params = list(
-#     input_file = "../Steven_orbitrap/alldata.lipidomics_summary.tsv",
-#     metadata_file = "../Steven_orbitrap/metadata2.tsv"
-#   ),
-#   output_file = paste0('lipidomics_report_', Sys.Date(), '.html')
-# )
+source("R/utils.R")
+
+#========================================================================
+# Change the options below to the correct file names and paths
+# examples of data files can be seen here in the GitHub repository here:
+# https://github.com/laurabiggins/lipidomics_report
+#========================================================================
+#
+# the input dataset and metadata file - these need to be full paths and contain the 
+# file suffix e.g. .csv/.txt
+data_file_path <- "D:/projects/lipidomics/example_data/CSC/datasets/alldata.lipidomics_summary_MiaPaca2_Parental-CSC.csv"
+meta_file <- "D:/projects/lipidomics/example_data/CSC/metadata_4_reps.txt" 
+
+# name of the output file - this doesn't need be a full path or contain a file suffix
+outfile <- "MiaPaca2_Parental-CSC"
+
+# whether the experimental design is matched/paired or not. TRUE or FALSE value required here.
+matched <- FALSE
 
 
-dir.create("output")#, showWarnings = FALSE)
-rmarkdown::render(
-  "R/orbitrap_processing.Rmd", 
-  params = list(
-    input_file = "../data/alldata.lipidomics_summary_test_data.tsv",
-    metadata_file = "../data/metadata.txt",
-    paired = TRUE
-  ),
-  output_file = paste0('../output/lipidomics_report_test_data_', Sys.Date(), '.html')
+#==============================================
+# The code below should be run but not changed
+#==============================================
+create_report(
+  data_file = data_file_path, 
+  metadata_file = meta_file, 
+  outfile_name = outfile, 
+  matched = matched_samples
 )
 
 
 
-# rmarkdown::render(
-#   "orbitrap_processing.Rmd", 
-#   params = list(
-#     input_file = "../example_data/Mouse-Ear-Serum/Ear_alldata.lipidomics_summary_4replicas_SYNC.tsv",
-#     metadata_file = "../example_data/Mouse-Ear-Serum/metadata_ALL.tsv",
-#     paired = FALSE
-#   ),
-#   output_file = paste0('lipidomics_report_Mouse-Ear_SYNC', Sys.Date(), '.html')
-# )
-# 
-# file_path <- list.files("../example_data/Mouse-Ear-Serum",full.names = TRUE)[-7]
-# file_names <- list.files("../example_data/Mouse-Ear-Serum")[-7]
-# suffix <- stringr::str_extract(file_path, "_([:alnum:])*.tsv$")
-# prefix <- stringr::str_extract(file_names, "([:alpha:])*_")
-# file_suffix <- paste0(prefix, stringr::str_replace(suffix, ".tsv", replacement = ""))
-# 
-# create_report <- function(file, suffix){
-#   rmarkdown::render(
-#     "R/orbitrap_processing.Rmd", 
-#     params = list(
-#       input_file = file,
-#       metadata_file = "../example_data/Mouse-Ear-Serum/metadata_ALL.tsv",
-#       paired = FALSE
-#     ),
-#     output_file = paste0('output/lipidomics_report', suffix, "_", Sys.Date(), '.html')
-#   )
-# }
-# 
-# #for (i in 3:length(file_path)){
-# for (i in 3){
-#   #print(i)
-#   create_report(file_path[i], file_suffix[i])
-# }
 
-# this fails because there is an extra line of column names
-#create_report(files[2], file_suffix[2])
+# for multiple files
+# data_folder <- "D:/projects/lipidomics/example_data/CSC/datasets/" 
+# file_paths <- list.files(data_folder,full.names = TRUE)
