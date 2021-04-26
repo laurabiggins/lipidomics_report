@@ -14,9 +14,7 @@ totals <- tidy_data %>%
   group_by(class) %>%
   mutate(max_percent = max(percent)) %>%
   ungroup() %>%
-  group_by(condition) %>%
-  mutate(pie_class = if_else(max_percent > 1, class, "other")) %>%
-  ungroup()
+  mutate(pie_class = if_else(max_percent > 1, class, "other"))
 
 
 bar_totals_linear <- tidy_data %>%
@@ -45,11 +43,12 @@ bar_totals_log2 <- tidy_data %>%
 
 <hr class="style2">  
 
-### Summary of total amounts
+### Summary of total amounts across all samples
 
 The pie charts show the proportion of lipid types in the samples. Any that comprised
 < 1% of the total amount were grouped into an "other" category for the pie charts.
-The full set and values can be found in the table below.
+The full set and values can be found in the table below.  
+The plots and table show total summed values across all replicates.
 
 ```{r, out.width=c('50%', '50%'), fig.show='hold', fig.height = 7}
 pie_data <- totals %>%
@@ -72,8 +71,12 @@ pie(
   col=rainbow(n_col),
   main = exp_conditions[1]
 )
-pie(pie_cond2$total_pie_percent, labels=pie_cond2$pie_class, col=rainbow(n_col),
-    main = exp_conditions[2])
+pie(
+  pie_cond2$total_pie_percent, 
+  labels=pie_cond2$pie_class, 
+  col=rainbow(n_col),
+  main = exp_conditions[2]
+  )
 ```
 
 ```{r}
@@ -91,12 +94,30 @@ totals %>%
 ```
 
 <br><br>
+<hr>
+<br><br>
 
-### Totals - linear scale
-These need error bars.
+### Mean of total amounts 
+```{r}
+bar_totals_linear %>%
+  dplyr::arrange(desc(mean_total)) %>%
+  select(class, condition, mean_total) %>%
+  tidyr::pivot_wider(names_from = condition, values_from = c(mean_total)) %>%
+  DT::datatable(
+      rownames = FALSE, 
+      options = list(pageLength = 15, dom = "tlip"), 
+      escape = FALSE
+      ) %>%
+    DT::formatRound(digits = 2, 2:3) 
+```
+
+<br><br>
+
+### Mean of total amounts - linear scale
 
 ```{r}
 bar_totals_linear %>%
+  dplyr::arrange(desc(mean_total)) %>%
   ggplot(aes(x = class, y = mean_total, fill = condition)) + 
   geom_bar(
     colour = "black", 
