@@ -27,6 +27,24 @@ custom_barplot <- function(bar_data, lipid_class, abundance_level){
     xlab("")
 }
 
+custom_barplot <- function(bar_data, lipid_class, abundance_level){
+
+  bar_data %>%
+    filter(class == lipid_class) %>%
+    filter(abundance == abundance_level) %>%
+    ggplot(aes(x = lipid_name, y = value, fill = condition)) +
+    geom_bar(aes(y = median), 
+             colour = "black", 
+             position= position_dodge(width = dodge_width),
+             width = 0.8,
+             stat="identity",
+             lwd = 0.8) + 
+    geom_point(position= position_dodge(width = dodge_width)) +
+    scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, face = "bold")) +
+    xlab("")
+}
 ```
 
 ```{r forest_function}
@@ -46,7 +64,7 @@ custom_forest <- function(plot_data, lipid_class, abundance_level){
 
 
 ```{r abundance_counts}
-abundance_counts <- bar_data_linear %>%
+abundance_counts <- bar_data_linear_median %>%
   filter(class == lipid_class) %>%
   count(abundance) %>%
   pull(n, name = abundance)
@@ -57,7 +75,7 @@ any_low <- "low" %in% names(abundance_counts)
 #### High abundance
 
 ```{r, out.width=c('50%', '50%'), fig.show='hold', fig.height = 6, eval = any_high}
-custom_barplot(bar_data_linear, lipid_class, abundance_level = "high")
+custom_barplot(bar_data_linear_median, lipid_class, abundance_level = "high")
 custom_forest(t_test_res, lipid_class, abundance_level = "high")
 ```
 
@@ -70,7 +88,7 @@ cat("No high abundance lipids in this class.")
 #### Low abundance
 
 ```{r, out.width=c('50%', '50%'), fig.show='hold', fig.height = 6, eval = any_low}
-custom_barplot(bar_data_linear, lipid_class, abundance_level = "low")
+custom_barplot(bar_data_linear_median, lipid_class, abundance_level = "low")
 custom_forest(t_test_res, lipid_class, abundance_level = "low")
 ```
 
