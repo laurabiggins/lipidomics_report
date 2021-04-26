@@ -43,18 +43,33 @@ metadata <- switch(tools::file_ext(params$metadata_file),
        csv = readr::read_csv(params$metadata_file),
        stop("Unknown file extension on metadata file")
 )
+```
 
+```{r checks, results = FALSE}
 # sanity checks on data needed
+assertthat::assert_that(params$lipid_name_col %in% colnames(all_data))
+assertthat::assert_that(
+  params$meta_sample_name %in% colnames(metadata), 
+  msg = paste0("Sample name column ", params$meta_sample_name, " not found in metadata file.")
+)
+assertthat::assert_that(
+  params$meta_condition_type %in% colnames(metadata),
+  msg = paste0("Condition type column ", params$meta_condition_type, " not found in metadata file.")
+)
+assertthat::assert_that(
+  all(colnames(all_data) %in% c(metadata[[params$meta_sample_name]], params$lipid_name_col)),
+  msg = paste0("Unexpected column name found in all_data file, one of: ", colnames(all_data))
+)
+```
 
+```{r process_data}
 all_data <- dplyr::rename(
   all_data, lipid_name := tidyselect::all_of(params$lipid_name_col)
 )
 
 all_data <- all_data %>%
   replace(is.na(.), 0)
-```
 
-```{r process_data}
 meta_info <- metadata %>%
   dplyr::rename(sample_name = tidyselect::all_of(params$meta_sample_name)) %>%
   dplyr::rename(condition = tidyselect::all_of(params$meta_condition_type)) %>%
@@ -95,22 +110,6 @@ tidy_data <- tidy_data %>%
 # run once
 dodge_width <- 0.8
 
-# bar_data_linear <- tidy_data %>%
-#   dplyr::group_by(class, lipid_name, condition) %>%
-#   dplyr::summarise(
-#     mean = mean(value),
-#     median = median(value),
-#     se = sd(value)/sqrt(dplyr::n())
-#   ) %>%
-#   ungroup() %>%
-#   group_by(lipid_name) %>%
-#   mutate(min_mean = min(mean)) %>%
-#   mutate(max_mean = max(mean)) %>%
-#   ungroup() %>%
-#  # mutate(abundance = if_else(min_mean <= 1, "low", "high"))
-#   mutate(abundance = if_else(max_mean <= 1, "low", "high")) %>%
-#   select(class, lipid_name, mean, condition, se, abundance)
-
 bar_data_linear_median <- tidy_data %>%
   dplyr::group_by(class, lipid_name, condition) %>%
   dplyr::summarise(median = median(value)) %>%
@@ -119,7 +118,6 @@ bar_data_linear_median <- tidy_data %>%
   mutate(min_median = min(median)) %>%
   mutate(max_median = max(median)) %>%
   ungroup() %>%
- # mutate(abundance = if_else(min_mean <= 1, "low", "high"))
   mutate(abundance = if_else(max_median <= 1, "low", "high")) %>%
   left_join(tidy_data) %>%
   select(class, lipid_name, value, median, condition, abundance) 
@@ -273,8 +271,8 @@ summary_table_data %>%
 ```
 
 ```{r, results = "asis"}
-#res <- lapply(unique(tidy_data$lipid_name)[1:3], function(lipid_to_plot) { # to speed up tests
-res <- lapply(unique(tidy_data$lipid_name), function(lipid_to_plot) {
+res <- lapply(unique(tidy_data$lipid_name)[1:3], function(lipid_to_plot) { # to speed up tests
+#res <- lapply(unique(tidy_data$lipid_name), function(lipid_to_plot) {
   knitr::knit_child(
     "child_plots.Rmd", envir = environment(), quiet = TRUE
   )
