@@ -267,15 +267,16 @@ superclasses <- tibble::enframe(
 <div class = "row">
 <div class = "col-md-4">
 <br><br><br><br>
-The y axis values are transformed p values from t-tests between `r exp_conditions[1]` 
-and `r exp_conditions[2]` for each lipid.
-The x axis shows the magnitude of difference between the conditions for that lipid.
+The y axis shows the –log10(padj) so the negative of the log-transformed p-values, 
+adjusted for multiple comparisons.
+The x axis shows the magnitude of difference between the conditions for that lipid, 
+expressed as a ratio.
 
 Each point on the plot is a lipid (subclass?).   
 Hover over a point to see the name.
 
-The dashed red line shows significance i.e. any points above this are likely to 
-be significantly different between the 2 conditions. 
+The dashed red line shows significance (p<0.05) i.e. any points above it represent 
+a significant difference between the 2 conditions.
 
 </div>
 <div class = "col-md-8">

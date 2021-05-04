@@ -19,6 +19,11 @@ params:
 
 ---
 
+<p style="font-size: 10px";>
+This report aims to present lipid data in relation to the different conditions with which they are associated. It is not a definitive analysis of the data but rather an introduction to it.  
+Lipid data tends to be log-normal so, prior to statistical analyses, the data were log transformed to meet the assumptions of the tests. However, such transformation may not be suitable for all classes/species so the p-values should always be interpreted after careful graphical exploration of the data.
+</p>
+
 ```{r setup, include=FALSE}
 library(knitr)
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
@@ -221,10 +226,12 @@ value < 1 in either condition.
 The points show each individual value.
    
 ### Forest plot information    
-The plots on the right show log2 ratios between the 2 conditions, the red point shows the ratio while the lines show the confidence interval.
+The plots on the right show log2 ratios between the 2 conditions, the red point 
+shows the ratio while the lines show the confidence interval. If the confidence 
+interval does not span over 0, the difference between the 2 conditions for that 
+particular species will be significant.  
 Subclasses that did not fit the assumptions for t_tests may not be shown in these plots.
   
-More information can be found in the other tabs in the report.  
 
 ```{r}
 # for if there are loads and we want a link to the plot further down the page

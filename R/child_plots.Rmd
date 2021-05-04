@@ -87,6 +87,7 @@ test_name_for_report <- switch(test,
 
 #### Test performed: `r test_name_for_report`
 
+#### p-value (uncorrected) : `r one_lipid$p_val[1]`    
 #### p-value (corrected) : `r one_lipid$adj_pval[1]`    
 ```{r, results="asis", eval = FALSE}
 cat(one_lipid$p_val[1])
