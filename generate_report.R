@@ -8,13 +8,13 @@
 # tools, assertthat, rstatix, knitr, DT, plotly, pheatmap, rmarkdown
 packages_required <- c("tidyverse", "ggplot2", "tools", "assertthat", "rstatix",
                        "knitr", "DT", "plotly", "pheatmap", "rmarkdown", "RColorBrewer",
-                       "crosstalk", )
+                       "crosstalk")
 if(!all(packages_required %in% rownames(installed.packages()))) {
   print(paste0(
     "please install the package ", 
     packages_required[!packages_required %in% rownames(installed.packages())]
   ))
-}
+} else { print("Looks like all the required packages are installed, please continue...")}
 
 
 # The input dataset and metadata file - these can be full or relative paths and 
