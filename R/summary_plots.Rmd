@@ -267,7 +267,7 @@ superclasses <- tibble::enframe(
 <div class = "row">
 <div class = "col-md-4">
 <br><br><br><br>
-The y axis shows the –log10(padj) so the negative of the log-transformed p-values, 
+The y axis shows the –log10(padj); that is the negative of the log-transformed p-values, 
 adjusted for multiple comparisons.
 The x axis shows the magnitude of difference between the conditions for that lipid, 
 expressed as a ratio.
