@@ -4,6 +4,18 @@
 # https://github.com/laurabiggins/lipidomics_report
 #========================================================================
 
+# required packages that aren't explicitly loaded
+# tools, assertthat, rstatix, knitr, DT, plotly, pheatmap, rmarkdown
+packages_required <- c("tidyverse", "ggplot2", "tools", "assertthat", "rstatix",
+                       "knitr", "DT", "plotly", "pheatmap", "rmarkdown")
+if(!all(packages_required %in% rownames(installed.packages()))) {
+  print(paste0(
+    "please install the package ", 
+    packages_required[!packages_required %in% rownames(installed.packages())]
+  ))
+}
+
+
 # The input dataset and metadata file - these can be full or relative paths and 
 # must contain the file suffix e.g. .csv/.txt/.tsv
 data_file_path <- "data/alldata.lipidomics_summary_test_data.tsv"
