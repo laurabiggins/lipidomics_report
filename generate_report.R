@@ -7,7 +7,8 @@
 # required packages that aren't explicitly loaded
 # tools, assertthat, rstatix, knitr, DT, plotly, pheatmap, rmarkdown
 packages_required <- c("tidyverse", "ggplot2", "tools", "assertthat", "rstatix",
-                       "knitr", "DT", "plotly", "pheatmap", "rmarkdown")
+                       "knitr", "DT", "plotly", "pheatmap", "rmarkdown", "RColorBrewer",
+                       "crosstalk", )
 if(!all(packages_required %in% rownames(installed.packages()))) {
   print(paste0(
     "please install the package ", 
@@ -46,6 +47,7 @@ create_report(
 
 # Other example paths on my Windows machine
 # data_file_path <- "D:/projects/lipidomics/example_data/CSC/datasets/alldata.lipidomics_summary_MiaPaca2_Parental-CSC.csv"
+
 # meta_file <- "D:/projects/lipidomics/example_data/CSC/metadata_4_reps.txt" 
 
 
