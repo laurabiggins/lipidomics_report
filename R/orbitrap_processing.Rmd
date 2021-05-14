@@ -16,6 +16,9 @@ params:
   lipid_name_col: X1
   #paired: TRUE
   paired: FALSE
+  quick_test: TRUE
+  output_folder: out
+  bar_class_ylabel: value
 
 ---
 
@@ -274,17 +277,33 @@ summary_table_data %>%
     ) %>%
   DT::formatRound(digits = 3, cols_to_round) %>%
   DT::formatRound(digits = 5, pvals_to_round)
-  
+
+```
+
+```{r}
+out_file <- paste0(params$output_folder, "/data_table.csv") 
+readr::write_csv(stats_pvals, file = out_file) 
 ```
 
 ```{r, results = "asis"}
-res <- lapply(unique(tidy_data$lipid_name)[1:3], function(lipid_to_plot) { # to speed up tests
-#res <- lapply(unique(tidy_data$lipid_name), function(lipid_to_plot) {
+lipids_for_plotting <- unique(tidy_data$lipid_name)
+  
+if(params$quick_test) lipids_for_plotting <- lipids_for_plotting[1:3]
+
+res <- lapply(lipids_for_plotting, function(lipid_to_plot) {
   knitr::knit_child(
     "child_plots.Rmd", envir = environment(), quiet = TRUE
   )
 })
 cat(unlist(res), sep = '\n')
+
+# res <- lapply(unique(tidy_data$lipid_name)[1:3], function(lipid_to_plot) { # to speed up tests
+# #res <- lapply(unique(tidy_data$lipid_name), function(lipid_to_plot) {
+#   knitr::knit_child(
+#     "child_plots.Rmd", envir = environment(), quiet = TRUE
+#   )
+# })
+# cat(unlist(res), sep = '\n')
 ```
   
 ## 4. Experimental info
