@@ -16,7 +16,8 @@
 #'
 #' @examples
 create_report <- function(data_file, metadata_file, outfile_name, matched = FALSE,
-                          output_fullpath_supplied = FALSE){
+                          output_fullpath_supplied = FALSE, quick_test = FALSE,
+                          bar_class_ylabel = ""){
   
   assertthat::assert_that(file.exists(data_file), msg = paste0("data file not found, file name supplied = ", data_file))
   assertthat::assert_that(file.exists(metadata_file), msg = paste0("metadata file not found, file name supplied = ", metadata_file))
@@ -25,7 +26,14 @@ create_report <- function(data_file, metadata_file, outfile_name, matched = FALS
     is.logical(matched),
     msg = paste0("matched_samples option must be TRUE or FALSE, value found = ", matched_samples)
   )
- 
+  assertthat::assert_that(
+    is.logical(quick_test),
+    msg = paste0("quick_test option must be TRUE or FALSE, value found = ", matched_samples)
+  )
+  assertthat::assert_that(
+    is.character(bar_class_ylabel),
+    msg = paste0("bar_class_ylabel option must a piece of text surrounded by quotes, value found = ", matched_samples)
+  )
   
   if(output_fullpath_supplied) {
     out_file <- outfile_name
@@ -42,7 +50,10 @@ create_report <- function(data_file, metadata_file, outfile_name, matched = FALS
     params = list(
       input_file = data_file,
       metadata_file = metadata_file,
-      paired = matched
+      paired = matched,
+      quick_test = quick_test,
+      output_folder = output_location,
+      bar_class_ylabel = bar_class_ylabel
     ),
     output_file = out_file
   )
