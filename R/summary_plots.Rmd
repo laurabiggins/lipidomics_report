@@ -334,7 +334,7 @@ plotly::ggplotly(p, tooltip = "lipid_name")
 #### Rows ordered by lipid subclass, columns ordered by condition, no clustering
 
 ```{r, fig.height = 8, fig.width = 10}
-pheatmap::pheatmap(
+heatmap1 <- pheatmap::pheatmap(
   heatmap_data,
   scale = "row",
   annotation_row = row_annotation,
@@ -346,6 +346,8 @@ pheatmap::pheatmap(
   annotation_colors = annot_colours#,
   #annotation_legend = FALSE
 )
+
+heatmap1
 ```
 
 <br>
@@ -354,7 +356,7 @@ pheatmap::pheatmap(
 #### Rows ordered by lipid subclass, clustered by columns
 
 ```{r, fig.height = 8, fig.width = 10}
-pheatmap::pheatmap(
+heatmap2 <- pheatmap::pheatmap(
   heatmap_data,
   scale = "row",
   annotation_row = row_annotation,
@@ -365,6 +367,9 @@ pheatmap::pheatmap(
   annotation_colors = annot_colours#,
   #annotation_legend = FALSE
 )
+
+heatmap2
+
 ```
 
 <br>
@@ -375,7 +380,7 @@ pheatmap::pheatmap(
 ```{r, fig.height = 8, fig.width = 10}
 too_many_names <- if_else(nrow(heatmap_data) > 70, FALSE, TRUE)
 
-pheatmap::pheatmap(
+heatmap3 <- pheatmap::pheatmap(
   heatmap_data,
   scale = "row",
   annotation_row = row_annotation,
@@ -383,5 +388,21 @@ pheatmap::pheatmap(
   annotation_colors = annot_colours, 
   show_rownames = too_many_names
 )
+
+heatmap3
+
 ```
 
+```{r}
+pdf(file = paste0(params$output_folder, "/heatmap1.pdf"))
+heatmap1
+dev.off()
+
+pdf(file = paste0(params$output_folder, "/heatmap2.pdf"))
+heatmap2
+dev.off()
+
+pdf(file = paste0(params$output_folder, "/heatmap3.pdf"))
+heatmap3
+dev.off()
+```
