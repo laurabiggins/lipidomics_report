@@ -15,8 +15,8 @@
 #' @export
 #'
 #' @examples
-create_report <- function(data_file, metadata_file, outfile_name, matched = FALSE,
-                          output_fullpath_supplied = FALSE, quick_test = FALSE,
+create_report <- function(data_file, metadata_file, outfile_name, control, matched = FALSE,
+                          output_fullpath_supplied = FALSE, quick_test = FALSE, meta_condition_type= "Type", 
                           bar_class_ylabel = ""){
   
   assertthat::assert_that(file.exists(data_file), msg = paste0("data file not found, file name supplied = ", data_file))
@@ -35,6 +35,7 @@ create_report <- function(data_file, metadata_file, outfile_name, matched = FALS
     msg = paste0("bar_class_ylabel option must a piece of text surrounded by quotes, value found = ", matched_samples)
   )
   
+   
   if(output_fullpath_supplied) {
     out_file <- outfile_name
   } else {
@@ -53,8 +54,52 @@ create_report <- function(data_file, metadata_file, outfile_name, matched = FALS
       paired = matched,
       quick_test = quick_test,
       output_folder = output_location,
-      bar_class_ylabel = bar_class_ylabel
+      bar_class_ylabel = bar_class_ylabel,
+      control = control
     ),
     output_file = out_file
   )
 }
+
+
+#' process_metadata
+#' 
+#' Checking the metadata is as expected
+#'
+#' @param control name of the "control" condition
+#' @param metadata_file 
+#' @param meta_condition_type column name of metadata file that contains the conditions
+#' @param meta_sample_name column name of metadata file that contains the sample names
+#'
+#' @return tibble containing the processed metadata
+#' @export
+#'
+#' @examples
+process_metadata <- function(metadata_file, meta_condition_type = "Type", 
+                             meta_sample_name = "SampleName", control){
+
+  metadata <- switch(tools::file_ext(metadata_file), 
+                          tsv = ,
+                          txt = readr::read_tsv(metadata_file),
+                          csv = readr::read_csv(metadata_file),
+                          stop("Unknown file extension on metadata file")
+  )
+  assertthat::assert_that(
+    meta_condition_type %in% colnames(metadata),
+    msg = paste0("Condition type column ", meta_condition_type, " not found in metadata file.")
+  )
+  assertthat::assert_that(
+    meta_sample_name %in% colnames(metadata), 
+    msg = paste0("Sample name column ", meta_sample_name, " not found in metadata file.")
+  )
+  assertthat::assert_that(
+    control %in% metadata[[meta_condition_type]], 
+    msg = paste0("Sample name column ", meta_sample_name, " not found in metadata file.")
+  )
+  meta_info <- metadata %>%
+    dplyr::rename(sample_name = tidyselect::all_of(meta_sample_name)) %>%
+    dplyr::rename(condition = tidyselect::all_of(meta_condition_type)) %>%
+    dplyr::mutate(condition = stringr::str_squish(condition))
+}
+
+
