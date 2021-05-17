@@ -19,6 +19,7 @@ params:
   quick_test: TRUE
   output_folder: out
   bar_class_ylabel: value
+  control: Control
 
 ---
 
@@ -29,7 +30,7 @@ Lipid data tends to be log-normal so, prior to statistical analyses, the data we
 
 ```{r setup, include=FALSE}
 library(knitr)
-knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, comment = FALSE)
 library(ggplot2)
 library(tidyverse)
 options(knitr.duplicate.label = "allow")
