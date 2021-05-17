@@ -7,8 +7,7 @@
 # required packages that aren't explicitly loaded
 # tools, assertthat, rstatix, knitr, DT, plotly, pheatmap, rmarkdown
 packages_required <- c("tidyverse", "ggplot2", "tools", "assertthat", "rstatix",
-                       "knitr", "DT", "plotly", "pheatmap", "rmarkdown", "RColorBrewer",
-                       "crosstalk")
+                       "knitr", "DT", "plotly", "pheatmap", "rmarkdown", "RColorBrewer")
 if(!all(packages_required %in% rownames(installed.packages()))) {
   print(paste0(
     "please install the package ", 
@@ -45,9 +44,10 @@ matched_samples <- TRUE
 test_run <- TRUE
 
 # label for y axis in class bar plots, must be text surrounded by quotes.
-bar_class_ylabel <- "ng"
+bar_class_ylabel <- ""
 
-
+# Name of "control" condition, this must match the name of the condition in the metadata file.
+control <- "Control"
 
 #==============================================
 # The code below should be run but not changed
@@ -59,7 +59,8 @@ create_report(
   outfile_name = outfile, 
   quick_test = test_run,
   matched = matched_samples,
-  bar_class_ylabel = bar_class_ylabel
+  bar_class_ylabel = bar_class_ylabel,
+  control = control
 )
 
 
