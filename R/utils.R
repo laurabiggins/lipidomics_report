@@ -19,9 +19,16 @@ create_report <- function(data_file, metadata_file, outfile_name, control, match
                           output_fullpath_supplied = FALSE, quick_test = FALSE, meta_condition_type= "Type", 
                           bar_class_ylabel = ""){
   
-  assertthat::assert_that(file.exists(data_file), msg = paste0("data file not found, file name supplied = ", data_file))
-  assertthat::assert_that(file.exists(metadata_file), msg = paste0("metadata file not found, file name supplied = ", metadata_file))
-  assertthat::assert_that(nchar(outfile_name) > 1, msg = "outfile name must be supplied") 
+  assertthat::assert_that(nchar(outfile_name) > 1, msg = "outfile name must be supplied")
+  assertthat::assert_that(nchar(control) > 1, msg = "Name of control condition must be supplied")
+  assertthat::assert_that(
+    file.exists(data_file), 
+    msg = paste0("data file not found, file name supplied = ", data_file)
+  )
+  assertthat::assert_that(
+    file.exists(metadata_file), 
+    msg = paste0("metadata file not found, file name supplied = ", metadata_file)
+  )
   assertthat::assert_that(
     is.logical(matched),
     msg = paste0("matched_samples option must be TRUE or FALSE, value found = ", matched_samples)
@@ -46,11 +53,14 @@ create_report <- function(data_file, metadata_file, outfile_name, control, match
   
   out_file <- paste0(out_file, "_", Sys.Date(), '.html') 
   
+  #meta_info <- process_metadata(metadata_file = metadata_file, control = control)
+  
   rmarkdown::render(
     "R/orbitrap_processing.Rmd",
     params = list(
       input_file = data_file,
       metadata_file = metadata_file,
+     # meta_info = meta_info,
       paired = matched,
       quick_test = quick_test,
       output_folder = output_location,
@@ -75,8 +85,8 @@ create_report <- function(data_file, metadata_file, outfile_name, control, match
 #' @export
 #'
 #' @examples
-process_metadata <- function(metadata_file, meta_condition_type = "Type", 
-                             meta_sample_name = "SampleName", control){
+process_metadata <- function(metadata_file, control, meta_condition_type = "Type", 
+                             meta_sample_name = "SampleName"){
 
   metadata <- switch(tools::file_ext(metadata_file), 
                           tsv = ,
@@ -94,12 +104,63 @@ process_metadata <- function(metadata_file, meta_condition_type = "Type",
   )
   assertthat::assert_that(
     control %in% metadata[[meta_condition_type]], 
-    msg = paste0("Sample name column ", meta_sample_name, " not found in metadata file.")
+    msg = paste0("control condition ", control, " not found in metadata file.")
   )
   meta_info <- metadata %>%
     dplyr::rename(sample_name = tidyselect::all_of(meta_sample_name)) %>%
     dplyr::rename(condition = tidyselect::all_of(meta_condition_type)) %>%
     dplyr::mutate(condition = stringr::str_squish(condition))
+  
+  meta_info
 }
 
+#' name_wrapper
+#' helper function for creating tibble of superclasses
+#'
+#' @param vector_name 
+#' @param char_vec 
+#'
+#' @return
+#'
+#' @examples
+name_wrapper <- function(vector_name, char_vec){
+  setNames(char_vec, rep(vector_name, length(char_vec)))
+}
 
+superclasses <- tibble::enframe(
+  c(
+    name_wrapper(
+      "glycerophospholipids", 
+      c('PC', 'PE', 'PS', 'PI', 'PA', 'PG', 'CL')
+    ),
+    name_wrapper(
+      "lysolipids", 
+      c('LPA', 'LPC', 'LPE', 'LPG', 'LPI', 'LPS')
+    ),
+    name_wrapper(
+      "sphingolipids", 
+      c('SG', 'dhSG', 'SM', 'dhSM', 'dhCer', 'Cer', 'Glu-Cer', 'Hex-Cer', 'Lac-Cer', 'Gal-Cer', 'S1P')
+    ),
+    name_wrapper(
+      "ether_lipids",
+      c('O-TG', 'O-DG', 'O-PC', 'O-PE', 'P-PE', 'P-PC', 'O-LPA', 'O-LPC', 'O-LPE', 'P-LPA', 'P-LPC', 'P-LPE')
+    ),
+    name_wrapper(
+      "neutral_lipids",
+      c("TG", "CE", "CH", "DG")
+    ),
+    name_wrapper(
+      "acyl_CoA",
+      c('3-HMG-CoA', 'Succinyl-CoA', 'Hydroxybutyryl-CoA', 'Butyryl-CoA', 'Propionyl-CoA', 
+        'Methylmalonyl-CoA', 'Malonyl-CoA', 'Acetoacetyl-CoA', 'crotonyl-CoA', 'acetyl-CoA')
+    ),
+    name_wrapper(
+      "fatty_acyls",
+      c('FFA', 'FaCoA', 'FaCN')
+    ),
+    name_wrapper(
+      "PIPx",
+      c('PIP', 'PIP2', 'PIP3')
+    )
+  ), name = "superclass", value = "class"
+)
