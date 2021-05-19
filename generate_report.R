@@ -44,14 +44,16 @@ matched_samples <- TRUE
 test_run <- TRUE
 
 # label for y axis in class bar plots, must be text surrounded by quotes.
-bar_class_ylabel <- ""
+bar_class_ylabel <- "ng/ng DNA"
 
 # Name of "control" condition, this must match the name of the condition in the metadata file.
 control <- "Control"
 
+
 #==============================================
 # The code below should be run but not changed
 #==============================================
+library(magrittr)
 source("R/utils.R")
 create_report(
   data_file = normalizePath(data_file_path), 
@@ -65,10 +67,14 @@ create_report(
 
 
 # Other example paths on my Windows machine
-# data_file_path <- "D:/projects/lipidomics/example_data/CSC/datasets/alldata.lipidomics_summary_MiaPaca2_Parental-CSC.csv"
-
-# meta_file <- "D:/projects/lipidomics/example_data/CSC/metadata_4_reps.txt" 
-
+data_file_path <- "D:/projects/lipidomics/example_data/CSC/datasets/alldata.lipidomics_summary_MiaPaca2_Parental-CSC.csv"
+meta_file <- "D:/projects/lipidomics/example_data/CSC/metadata_4_reps.txt" 
+control <- "Parental"; outfile <- "miapaca_parental"
+#control <- "Stem"
+#outfile <- "miapaca_stem"
+test_run <- TRUE
+bar_class_ylabel <- "ng/ng DNA"
+matched_samples <- TRUE
 
 # for multiple files
 # data_folder <- "D:/projects/lipidomics/example_data/CSC/datasets/" 

@@ -79,6 +79,10 @@ pie(
   )
 ```
 
+<div class = "row">
+<div class = "col-md-7">
+
+### Total amounts
 ```{r}
 totals %>%
   dplyr::arrange(desc(max_percent)) %>%
@@ -86,16 +90,17 @@ totals %>%
   tidyr::pivot_wider(names_from = condition, values_from = c(total, percent)) %>%
   DT::datatable(
       rownames = FALSE, 
-      options = list(pageLength = 15, dom = "tlip"), 
+      options = list(pageLength = 10, dom = "tlip"), 
      # filter = list(position = "top"),
       escape = FALSE
       ) %>%
     DT::formatRound(digits = 2, 2:5) 
 ```
+</div>
+<div class = "col-md-1">
 
-<br><br>
-<hr>
-<br><br>
+</div>
+<div class = "col-md-4">
 
 ### Mean of total amounts 
 ```{r}
@@ -105,12 +110,16 @@ bar_totals_linear %>%
   tidyr::pivot_wider(names_from = condition, values_from = c(mean_total)) %>%
   DT::datatable(
       rownames = FALSE, 
-      options = list(pageLength = 15, dom = "tlip"), 
+      options = list(pageLength = 10, dom = "tlip"), 
       escape = FALSE
       ) %>%
     DT::formatRound(digits = 2, 2:3) 
 ```
+</div>
+</div>
 
+<br><br>
+<hr>
 <br><br>
 
 ### Mean of total amounts - linear scale
@@ -247,51 +256,6 @@ annot_colours <- list(
 <br>  
   
 ###  Volcano plot
-
-```{r}
-name_wrapper <- function(vector_name, char_vec){
-  setNames(char_vec, rep(vector_name, length(char_vec)))
-}
-
-superclasses <- tibble::enframe(
-  c(
-    name_wrapper(
-      "glycerophospholipids", 
-      c('PC', 'PE', 'PS', 'PI', 'PA', 'PG', 'CL')
-    ),
-    name_wrapper(
-      "lysolipids", 
-      c('LPA', 'LPC', 'LPE', 'LPG', 'LPI', 'LPS')
-    ),
-    name_wrapper(
-      "sphingolipids", 
-      c('SG', 'dhSG', 'SM', 'dhSM', 'dhCer', 'Cer', 'Glu-Cer', 'Hex-Cer', 'Lac-Cer', 'Gal-Cer', 'S1P')
-    ),
-    name_wrapper(
-      "ether_lipids",
-      c('O-TG', 'O-DG', 'O-PC', 'O-PE', 'P-PE', 'P-PC', 'O-LPA', 'O-LPC', 'O-LPE', 'P-LPA', 'P-LPC', 'P-LPE')
-    ),
-    name_wrapper(
-      "neutral_lipids",
-      c("TG", "CE", "CH", "DG")
-    ),
-    name_wrapper(
-      "acyl_CoA",
-      c('3-HMG-CoA', 'Succinyl-CoA', 'Hydroxybutyryl-CoA', 'Butyryl-CoA', 'Propionyl-CoA', 
-        'Methylmalonyl-CoA', 'Malonyl-CoA', 'Acetoacetyl-CoA', 'crotonyl-CoA', 'acetyl-CoA')
-    ),
-    name_wrapper(
-      "fatty_acyls",
-      c('FFA', 'FaCoA', 'FaCN')
-    ),
-    name_wrapper(
-      "PIPx",
-      c('PIP', 'PIP2', 'PIP3')
-    )
-  ), name = "superclass", value = "class"
-)
-
-```
 
 <div class = "row">
 <div class = "col-md-4">

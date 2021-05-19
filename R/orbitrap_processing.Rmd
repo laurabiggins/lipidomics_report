@@ -10,6 +10,7 @@ params:
   #input_file: ../data/alldata.lipidomics_summary_test_data.tsv
   input_file: D:/projects/lipidomics/example_data/CSC/datasets/alldata.lipidomics_summary_MiaPaca2_Parental-CSC.csv
   metadata_file: D:/projects/lipidomics/example_data/CSC/metadata_4_reps.txt
+  #meta_info: NULL 
   meta_sample_name: SampleName
   meta_condition_type: Type
   meta_rep: Rep
@@ -19,11 +20,13 @@ params:
   quick_test: TRUE
   output_folder: out
   bar_class_ylabel: value
-  control: Control
+  #control: Control
+  control: Parental
+  #interactive: TRUE
 
 ---
 
-<p style="font-size: 10px";>
+<p style="font-size: 11px";>
 This report aims to present lipid data in relation to the different conditions with which they are associated. It is not a definitive analysis of the data but rather an introduction to it.  
 Lipid data tends to be log-normal so, prior to statistical analyses, the data were log transformed to meet the assumptions of the tests. However, such transformation may not be suitable for all classes/species so the p-values should always be interpreted after careful graphical exploration of the data.
 </p>
@@ -36,9 +39,10 @@ library(tidyverse)
 options(knitr.duplicate.label = "allow")
 source("heatmap_processing.R")
 source("stats.R")
+source("utils.R")
 ```
 
-```{r import_data}
+```{r import_data, include=FALSE}
 all_data <- switch(tools::file_ext(params$input_file), 
        tsv = ,
        txt = readr::read_tsv(params$input_file),
@@ -46,43 +50,34 @@ all_data <- switch(tools::file_ext(params$input_file),
        stop("Unknown file extension on data file")
 )
 
-metadata <- switch(tools::file_ext(params$metadata_file), 
-       tsv = ,
-       txt = readr::read_tsv(params$metadata_file),
-       csv = readr::read_csv(params$metadata_file),
-       stop("Unknown file extension on metadata file")
-)
+meta_info <- process_metadata(metadata_file = params$metadata_file, control = params$control)
 ```
 
-```{r checks, results = FALSE}
+```{r checks, include = FALSE}
 # sanity checks on data needed
-assertthat::assert_that(params$lipid_name_col %in% colnames(all_data))
 assertthat::assert_that(
-  params$meta_sample_name %in% colnames(metadata), 
-  msg = paste0("Sample name column ", params$meta_sample_name, " not found in metadata file.")
+  params$lipid_name_col %in% colnames(all_data), 
+  msg = paste0(
+    "params$lipid_name_col ", 
+    params$lipid_name_col, 
+    " not found in ", 
+    colnames(all_data)
+  )
 )
+
 assertthat::assert_that(
-  params$meta_condition_type %in% colnames(metadata),
-  msg = paste0("Condition type column ", params$meta_condition_type, " not found in metadata file.")
-)
-assertthat::assert_that(
-  all(colnames(all_data) %in% c(metadata[[params$meta_sample_name]], params$lipid_name_col)),
-  msg = paste0("Unexpected column name found in all_data file, one of: ", colnames(all_data))
+  all(colnames(all_data) %in% c(meta_info$sample_name, params$lipid_name_col)),
+  msg = paste0("Unexpected column name found in all_data file")
 )
 ```
 
-```{r process_data}
+```{r process_data, include = FALSE}
 all_data <- dplyr::rename(
   all_data, lipid_name := tidyselect::all_of(params$lipid_name_col)
 )
 
 all_data <- all_data %>%
   replace(is.na(.), 0)
-
-meta_info <- metadata %>%
-  dplyr::rename(sample_name = tidyselect::all_of(params$meta_sample_name)) %>%
-  dplyr::rename(condition = tidyselect::all_of(params$meta_condition_type)) %>%
-  dplyr::mutate(condition = stringr::str_squish(condition)) #we've had double spaces that messes things up
 
 if(params$paired) {
   meta_type <- meta_info %>%
@@ -103,15 +98,16 @@ tidy_data <- all_data %>%
   dplyr::mutate(log2_value = if_else(log2_value == "-Inf", 0, log2_value)) # we don't want -Inf values
 
 exp_conditions <- unique(pull(tidy_data, condition))
-exp_conditions <- exp_conditions[1:2]
+exp_conditions <- exp_conditions[1:2] # this script can only deal with 2 conditions
+exp_conditions <- c(exp_conditions[exp_conditions != params$control], params$control)
+assertthat::assert_that(length(exp_conditions) == 2, msg = "Number of experimental conditions doesn't equal 2")
 
-# this script can only deal with 2 conditions
 meta_type <- meta_type %>%
   filter(condition %in% exp_conditions)
 
-# this script can only cope with 2 experimental conditions, so we'll remove any extras
 tidy_data <- tidy_data %>%
   filter(condition %in% exp_conditions)
+
 ```
 
 ```{r process_bar_data}
@@ -154,6 +150,7 @@ fc <- tidy_data %>%
   pivot_wider(names_from = condition, names_prefix = "log2_mean_", values_from = log2_mean) %>%
   mutate(log2_fc = .data[[paste0("log2_mean_", exp_conditions[1])]] - .data[[paste0("log2_mean_", exp_conditions[2])]])
 
+
 stats_pvals <- long_stats_pvals %>%
   select(class, lipid_name, test_type, p_val, adj_pval) %>%
   distinct() %>%
@@ -192,7 +189,7 @@ mean_log2 <- tidy_data %>%
   ) %>%
   ungroup() %>%
   pivot_wider(names_from = condition, values_from = mean) %>%
-  mutate(ratio = .data[[conditions[1]]] - .data[[conditions[2]]])
+  mutate(ratio = .data[[exp_conditions[1]]] - .data[[exp_conditions[2]]])
 
 # the p-values should match those in the summary table/individual lipids. It's easier doing the stats separately
 # here as we need some of the t-statistic values for the forest plot. Then afterwards, we filter for the lipids
@@ -298,13 +295,6 @@ res <- lapply(lipids_for_plotting, function(lipid_to_plot) {
 })
 cat(unlist(res), sep = '\n')
 
-# res <- lapply(unique(tidy_data$lipid_name)[1:3], function(lipid_to_plot) { # to speed up tests
-# #res <- lapply(unique(tidy_data$lipid_name), function(lipid_to_plot) {
-#   knitr::knit_child(
-#     "child_plots.Rmd", envir = environment(), quiet = TRUE
-#   )
-# })
-# cat(unlist(res), sep = '\n')
 ```
   
 ## 4. Experimental info
