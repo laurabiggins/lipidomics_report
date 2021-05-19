@@ -16,7 +16,6 @@ totals <- tidy_data %>%
   ungroup() %>%
   mutate(pie_class = if_else(max_percent > 1, class, "other"))
 
-
 bar_totals_linear <- tidy_data %>%
   group_by(class, condition, sample_name) %>%
   dplyr::summarise(total = sum(value)) %>%
@@ -38,6 +37,28 @@ bar_totals_log2 <- tidy_data %>%
     se_total = sd(total)/sqrt(dplyr::n())
   ) %>%
   ungroup()
+
+mean_log2_class <- tidy_data %>%
+  dplyr::group_by(class, condition) %>%#, sample_name) %>%
+  dplyr::summarise(
+    mean = mean(log2_value), 
+  ) %>%
+  ungroup() %>%
+  pivot_wider(names_from = condition, values_from = mean) %>%
+  mutate(ratio = .data[[exp_conditions[1]]] - .data[[exp_conditions[2]]])
+```
+
+```{r}
+t_test_by_class <- tidy_data %>%
+  group_by(class) %>%#, condition, sample_name) %>%
+  select(class, sample_name, condition, log2_value) %>%
+  rstatix::t_test(log2_value ~ condition, paired = params$paired) %>%
+  ungroup() %>%
+  mutate(padj = p.adjust(p, method="BH")) %>%
+  ungroup() %>%
+  mutate(tadj = qt(padj/2, df)) %>%
+  left_join(mean_log2_class) %>%
+  mutate(SE = abs(ratio/tadj), lower.limit=ratio-1.96*SE, upper.limit=ratio+1.96*SE) 
 
 ```
 
@@ -124,7 +145,7 @@ bar_totals_linear %>%
 
 ### Mean of total amounts - linear scale
 
-```{r}
+```{r, eval = FALSE}
 bar_totals_linear %>%
   dplyr::arrange(desc(mean_total)) %>%
   ggplot(aes(x = class, y = mean_total, fill = condition)) + 
@@ -145,25 +166,50 @@ bar_totals_linear %>%
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, face = "bold")) +
   xlab("")
-
-# totals %>%
-#   ggplot(aes(x = class, y = total, fill = condition)) + 
-#   geom_bar(
-#     colour = "black", 
-#     position= position_dodge(width = 0.8),
-#     width = 0.8,
-#     stat="identity",
-#     lwd = 0.8
-#   ) + 
-#   scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
-#   theme_minimal() +
-#   theme(axis.text.x = element_text(angle = 90, face = "bold")) +
-#   xlab("")
 ```
 
-### Totals - log2 scale   
-  
+```{r, fig.width = 10, fig.height=8}
+bar_totals_linear %>%
+  left_join(superclasses) %>%
+    ggplot(aes(x = class, y = mean_total, fill = condition)) + 
+    geom_bar(
+      colour = "black", 
+      position= position_dodge(width = 0.8),
+      width = 0.8,
+      stat="identity",
+      lwd = 0.8
+    ) + 
+    geom_errorbar(
+        aes(ymin=mean_total-se_total, ymax=mean_total+se_total), 
+        position = position_dodge(width = dodge_width), 
+        width = 0.25,
+        lwd = 0.8
+      ) +
+    scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, face = "bold")) +
+    xlab("") +
+    facet_wrap(~ superclass, scales = "free")
+```
+
+```{r forest_class, fig.width = 10, fig.height=8}
+t_test_by_class %>%
+  left_join(superclasses) %>%
+  ggplot(aes(ratio, class)) +
+    geom_errorbar(aes(xmin=lower.limit, xmax=upper.limit), width = 0.5, lwd=0.8, show.legend=FALSE)+
+    geom_point(size=3, colour="darkred")+
+    geom_vline(xintercept=0, linetype="dashed", color = "red")+
+    scale_x_continuous(breaks=seq(from =-15, by=1, to=5)) +
+    facet_wrap(~ superclass, scales = "free")
+```
+
 ```{r}
+#custom_forest(t_test_res, lipid_class, abundance_level = "high")
+```
+
+ 
+```{r, eval = FALSE}
+### Totals - log2 scale  
 bar_totals_linear %>%
   ggplot(aes(x = class, y = log2(mean_total), fill = condition)) + 
   geom_bar(
@@ -183,20 +229,6 @@ bar_totals_linear %>%
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, face = "bold")) +
   xlab("")
-
-# totals %>%
-#   ggplot(aes(x = class, y = log2_total, fill = condition)) + 
-#   geom_bar(
-#     colour = "black", 
-#     position= position_dodge(width = 0.8),
-#     width = 0.8,
-#     stat="identity",
-#     lwd = 0.8
-#   ) + 
-#   scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
-#   theme_minimal() +
-#   theme(axis.text.x = element_text(angle = 90, face = "bold")) +
-#   xlab("")
 ```
 
 ```{r, results="asis"}
