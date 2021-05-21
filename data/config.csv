@@ -1,0 +1,7 @@
+data_file_path,data/alldata.lipidomics_summary_test_data.tsv
+metadata_file,data/metadata.txt
+outfile,test_output
+control,Control
+test_run,TRUE
+matched_samples,TRUE
+bar_class_ylabel,ng/ng DNA
