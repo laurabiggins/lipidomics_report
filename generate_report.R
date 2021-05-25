@@ -18,7 +18,7 @@ config <- switch(tools::file_ext(config_file),
                  stop("Unknown file extension on config file")
 )
 
-config <- tibble::deframe(config)
+config <- tibble::deframe(config) # change to named vector
 
 expected_config_fields <- c(
   "data_file_path", 
@@ -58,6 +58,7 @@ assertthat::validate_that(
 )
 
 # everything gets read in as characters so these need converting to logical
+# these could be neatened up 
 assertthat::assert_that(
   config[["matched_samples"]] %in% c("TRUE", "FALSE"),
   msg = paste0("matched_samples option must be TRUE or FALSE, value found = ", config[["matched_samples"]])
@@ -70,15 +71,32 @@ assertthat::assert_that(
 )
 test_run <- as.logical(config[["test_run"]])
 
+# in case we wanted the option to supply a different output location
+output_fullpath_supplied <- FALSE
+if(output_fullpath_supplied) {
+  out_file <- outfile_name
+} else {
+  output_location <- paste0(dirname(data_file), "/output")
+  if(! dir.exists(output_location)) {
+    assertthat::is.writeable(output_location) # check it can be created
+    dir.create(output_location) 
+  }
+  out_file <- paste0(output_location, "/", outfile_name)
+}
 
-library(magrittr)
-source("R/utils.R")
-create_report(
-  data_file = normalizePath(config[["data_file_path"]]), 
-  metadata_file = normalizePath(config[["metadata_file"]]), 
-  outfile_name = config[["outfile"]], 
-  bar_class_ylabel = config[["bar_class_ylabel"]],
-  control = config[["control"]],
-  quick_test = test_run,
-  matched = matched_samples
+out_file <- paste0(out_file, "_", Sys.Date(), '.html') 
+
+rmarkdown::render(
+  "R/orbitrap_processing.Rmd",
+  params = list(
+    input_file =  normalizePath(config[["data_file_path"]]),
+    metadata_file = normalizePath(config[["metadata_file"]]),
+    paired = matched_samples,
+    quick_test = test_run,
+    output_folder = output_location,
+    bar_class_ylabel = config[["bar_class_ylabel"]],
+    control = config[["control"]]
+  ),
+  output_file = out_file
 )
+  

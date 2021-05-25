@@ -10,7 +10,6 @@ params:
   #input_file: ../data/alldata.lipidomics_summary_test_data.tsv
   input_file: D:/projects/lipidomics/example_data/CSC/datasets/alldata.lipidomics_summary_MiaPaca2_Parental-CSC.csv
   metadata_file: D:/projects/lipidomics/example_data/CSC/metadata_4_reps.txt
-  #meta_info: NULL 
   meta_sample_name: SampleName
   meta_condition_type: Type
   meta_rep: Rep
@@ -22,7 +21,6 @@ params:
   bar_class_ylabel: value
   #control: Control
   control: Parental
-  #interactive: TRUE
 
 ---
 

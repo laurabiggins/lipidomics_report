@@ -5,7 +5,7 @@
 #' @param data_file The data file must be in tab delimited format, and can be the output of an existing Orbitrap.R script (in a private repository). The first column should contain the lipid name, and subsequent columns should contain values for each of the different samples. One row per lipid. The first column can be unnamed, but the other column names must be the sample names. 
 #' The lipid name should be in the format "lipid class [space] subclass" e.g. "PC 26:0".
 #' @param metadata_file metadata file as shown in https://github.com/laurabiggins/lipidomics_report 
-#' @param outfile_name name of output file
+#' @param outfile_name name of output file, the date will be appended to it.
 #' @param matched_samples TRUE or FALSE, whether it is a paired/matched design
 #' @param output_fullpath_supplied TRUE or FALSE, the entire file path for the 
 #' output file can be supplied in the outfile_name parameter. If it is not, a directory
@@ -47,7 +47,7 @@ create_report <- function(data_file, metadata_file, outfile_name, control, match
     out_file <- outfile_name
   } else {
     output_location <- paste0(dirname(data_file), "/output")
-    if(! dir.exists(output_location)) dir.create(output_location)
+    if(! dir.exists(output_location)) dir.create(output_location) # check it can be created
     out_file <- paste0(output_location, "/", outfile_name)
   }
   
