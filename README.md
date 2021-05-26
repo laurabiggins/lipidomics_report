@@ -81,13 +81,13 @@ If the experiment is a matched design, the metadata file must contain a column n
 Name of the output file. The date will be appended to this file name.  
 
 ## bar_class_ylabel
- 
+y axis label for barplots in the class plots tab. Another similar parameter still needs to be implemented for barplot on the summary tab 
 
 ## control
- 
+The name of the "control" condition. This must match the name of the condition in the metadata file.
 
 ## test_run
- 
+TRUE or FALSE. Whether to run a quicker version of the code that only produces 3 plots in the individual lipids tab. 
 
 
 
