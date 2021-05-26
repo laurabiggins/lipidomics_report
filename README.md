@@ -9,7 +9,8 @@ To run the code and create a report, open the lipidomics_report_wrapper.R script
 The config file can be in csv, txt or tsv format. It should look similar to the table below. The first column should not be changed, but the 2nd column should be populated with the appropriate information.  
 Details of each parameter can be found in this document.
 
-|--|--|
+|  |  | 
+|-----------|---------------|
 | [data_file_path](#data_file_path) | data/alldata.lipidomics_summary_test_data.tsv |
 | [matched_samples](#matched_samples) | TRUE |
 | [metadata_file](#metadata_file) | data/metadata.txt |
@@ -64,6 +65,7 @@ The metadata file should be in one of the following formats. The column names sh
 
 ### Matched/Paired samples  
 If the experiment is a matched design, the metadata file must contain a column named "Rep", containing the replicate number.  
+
 | SampleName | Type | Rep | 
 | ---------- | ---- | --- |
 | WT_1       | Control | 1 |
