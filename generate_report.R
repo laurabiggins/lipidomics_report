@@ -74,29 +74,33 @@ test_run <- as.logical(config[["test_run"]])
 # in case we wanted the option to supply a different output location
 output_fullpath_supplied <- FALSE
 if(output_fullpath_supplied) {
-  out_file <- outfile_name
+  out_file <- config[["outfile"]]
 } else {
-  output_location <- paste0(dirname(data_file), "/output")
+  #output_location <- paste0(dirname(config[["data_file_path"]]), "/output")
+  output_location <- paste0(tools::file_path_as_absolute(dirname(config[["data_file_path"]])),"/output") 
   if(! dir.exists(output_location)) {
     assertthat::is.writeable(output_location) # check it can be created
     dir.create(output_location) 
   }
-  out_file <- paste0(output_location, "/", outfile_name)
+  out_file <- paste0(output_location, "/", config[["outfile"]])
 }
 
 out_file <- paste0(out_file, "_", Sys.Date(), '.html') 
 
+input_file_path <- tools::file_path_as_absolute(config[["data_file_path"]])
+meta_filepath <- tools::file_path_as_absolute(config[["metadata_file"]])
+
 rmarkdown::render(
   "R/orbitrap_processing.Rmd",
   params = list(
-    input_file =  normalizePath(config[["data_file_path"]]),
-    metadata_file = normalizePath(config[["metadata_file"]]),
+    input_file =  input_file_path,
+    metadata_file =  meta_filepath,
     paired = matched_samples,
     quick_test = test_run,
     output_folder = output_location,
     bar_class_ylabel = config[["bar_class_ylabel"]],
     control = config[["control"]]
   ),
-  output_file = out_file
+  output_file = (out_file)
 )
   

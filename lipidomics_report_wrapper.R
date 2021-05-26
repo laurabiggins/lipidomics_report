@@ -3,7 +3,7 @@
 #========================================================================
 
 
-#config_file <- "D:/projects/lipidomics/lipidomics_report/data/config.csv"
+#config_file <- "data/config.txt"
 config_file <- file.choose()
 
 source("generate_report.R")
