@@ -71,7 +71,7 @@ The pie charts show the proportion of lipid types in the samples. Any that compr
 The full set and values can be found in the table below.  
 The plots and table show total summed values across all replicates.
 
-```{r, out.width=c('50%', '50%'), fig.show='hold', fig.height = 7}
+```{r, pie_charts, out.width=c('50%', '50%'), fig.show='hold', fig.height = 7}
 pie_data <- totals %>%
   select(pie_class, percent, condition) %>%
   group_by(pie_class, condition) %>%
@@ -168,7 +168,7 @@ bar_totals_linear %>%
   xlab("")
 ```
 
-```{r, fig.width = 10, fig.height=8}
+```{r, bar_totals, fig.width = 10, fig.height=8}
 bar_totals_linear %>%
   left_join(superclasses) %>%
     ggplot(aes(x = class, y = mean_total, fill = condition)) + 
@@ -250,7 +250,7 @@ var_above0 <- all_data %>%
 heatmap_data <- tibble::column_to_rownames(var_above0, "lipid_name")
 ```  
 
-```{r, plot_heatmap}
+```{r, heatmap_processing2}
 classes <- tidy_data %>%
   select(lipid_name, class) %>%
   distinct()
@@ -305,7 +305,7 @@ a significant difference between the 2 conditions.
 
 </div>
 <div class = "col-md-8">
-```{r, fig.height=5, fig.width=6}
+```{r, volcano, fig.height=5, fig.width=6}
 p <- t_test_res %>%
   left_join(superclasses) %>%
   ggplot(aes(x = ratio, y = -log10(padj), col = superclass, annotation = lipid_name)) +
@@ -329,7 +329,7 @@ plotly::ggplotly(p, tooltip = "lipid_name")
 
 #### Rows ordered by lipid subclass, columns ordered by condition, no clustering
 
-```{r, fig.height = 8, fig.width = 10}
+```{r, heatmap1, fig.height = 8, fig.width = 10}
 heatmap1 <- pheatmap::pheatmap(
   heatmap_data,
   scale = "row",
@@ -351,7 +351,7 @@ heatmap1
 
 #### Rows ordered by lipid subclass, clustered by columns
 
-```{r, fig.height = 8, fig.width = 10}
+```{r, heatmap2, fig.height = 8, fig.width = 10}
 heatmap2 <- pheatmap::pheatmap(
   heatmap_data,
   scale = "row",
@@ -373,7 +373,7 @@ heatmap2
 
 #### With row clustering and column clustering
 
-```{r, fig.height = 8, fig.width = 10}
+```{r, heatmap3, fig.height = 8, fig.width = 10}
 too_many_names <- if_else(nrow(heatmap_data) > 70, FALSE, TRUE)
 
 heatmap3 <- pheatmap::pheatmap(
@@ -389,7 +389,7 @@ heatmap3
 
 ```
 
-```{r}
+```{r, eval = FALSE}
 pdf(file = paste0(params$output_folder, "/heatmap1.pdf"))
 heatmap1
 dev.off()

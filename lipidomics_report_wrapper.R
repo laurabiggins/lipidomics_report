@@ -3,7 +3,9 @@
 #========================================================================
 
 
-#config_file <- "data/config.txt"
+#config_file <- "D:\\projects\\lipidomics\\example_data\\CSC\\config_miapaca.txt"
+#config_file <- "D:\\projects\\lipidomics\\lipidomics_report\\data\\config.csv"
+
 config_file <- file.choose()
 
 source("generate_report.R")

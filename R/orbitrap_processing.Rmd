@@ -4,6 +4,7 @@ date: "`r Sys.Date()`"
 output: 
   html_document:
     keep_md: false
+    self_contained: yes
 output_file: lip
 params: 
   #metadata_file: ../data/metadata.txt
@@ -32,6 +33,12 @@ Lipid data tends to be log-normal so, prior to statistical analyses, the data we
 ```{r setup, include=FALSE}
 library(knitr)
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, comment = FALSE)
+
+figure_output <- paste0(params$output_folder, "/figures/")
+#knitr::opts_chunk$set(dev = c('png', 'pdf'), fig.path='figures/') 
+knitr::opts_chunk$set(dev = c('png', 'pdf', 'svg'), fig.path = figure_output) 
+
+
 library(ggplot2)
 library(tidyverse)
 options(knitr.duplicate.label = "allow")
@@ -310,7 +317,7 @@ DT::datatable(meta_type, rownames = FALSE, options = list(pageLength = 15, dom =
   
 0 values have been removed.  
 
-```{r, out.width=c('50%', '50%'), fig.show='hold', fig.height = 6}
+```{r, qqplots, out.width=c('50%', '50%'), fig.show='hold', fig.height = 6}
 removed_0 <- tidy_data %>%
   filter(value > 0)
 

@@ -51,7 +51,11 @@ any_low <- "low" %in% names(abundance_counts)
 
 #### High abundance
 
-```{r, out.width=c('50%', '50%'), fig.show='hold', fig.height = 6, eval = any_high}
+```{r}
+fig_out <- paste0(figure_output, "/", lipid_class, "-")
+```
+
+```{r, high_bar_forest, out.width=c('50%', '50%'), fig.show='hold', fig.height = 6, eval = any_high, fig.path=fig_out}
 custom_barplot(bar_data_linear_median, lipid_class, abundance_level = "high", y_label = params$bar_class_ylabel)
 custom_forest(t_test_res, lipid_class, abundance_level = "high")
 ```
@@ -64,7 +68,7 @@ cat("No high abundance lipids in this class.")
 
 #### Low abundance
 
-```{r, out.width=c('50%', '50%'), fig.show='hold', fig.height = 6, eval = any_low}
+```{r, low_bar_forest, out.width=c('50%', '50%'), fig.show='hold', fig.height = 6, eval = any_low, fig.path=fig_out}
 custom_barplot(bar_data_linear_median, lipid_class, abundance_level = "low", y_label = params$bar_class_ylabel)
 custom_forest(t_test_res, lipid_class, abundance_level = "low")
 ```

@@ -50,6 +50,9 @@ paired_lineplot <- function(data_tib, val = "value"){
 ```{r}
 one_lipid <- long_stats_pvals %>%
   filter(lipid_name == lipid_to_plot)
+
+fig_out <- paste0(figure_output, "/individual_lipid_plots/", one_lipid, "-")
+
 ```
 
 <div class = "row">
