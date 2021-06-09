@@ -1,7 +1,7 @@
 # lipidomics report
 
-This project contains code to generate an html report for lipidomics data. It requires a config file that contains various paramets required to create the report. The wrapper script lipidomics_report_wrapper.R is the only code that the user should need to interact with.
-To run the code and create a report, open the lipidomics_report_wrapper.R script and follow the instructions.
+This project contains code to generate an html report for lipidomics data. It requires a config file that contains various parameters required to create the report. The wrapper script lipidomics_report_wrapper.R is the only code that the user should need to interact with.
+To run the code and create a report, open the lipidomics_report_wrapper.R script and run the two lines of code.
 <br><br> 
     
 ## Config file  
@@ -81,13 +81,13 @@ If the experiment is a matched design, the metadata file must contain a column n
 Name of the output file. The date will be appended to this file name.  
 
 ## bar_class_ylabel
- 
+y axis label for barplots in the class plots tab. Another similar parameter still needs to be implemented for barplot on the summary tab 
 
 ## control
- 
+The name of the "control" condition. This must match the name of the condition in the metadata file.
 
 ## test_run
- 
+TRUE or FALSE. Whether to run a quicker version of the code that only produces 3 plots in the individual lipids tab. 
 
 
 
