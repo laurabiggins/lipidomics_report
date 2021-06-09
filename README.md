@@ -1,7 +1,7 @@
 # lipidomics report
 
-This project contains code to generate an html report for lipidomics data. It requires a config file that contains various paramets required to create the report. The wrapper script lipidomics_report_wrapper.R is the only code that the user should need to interact with.
-To run the code and create a report, open the lipidomics_report_wrapper.R script and follow the instructions.
+This project contains code to generate an html report for lipidomics data. It requires a config file that contains various parameters required to create the report. The wrapper script lipidomics_report_wrapper.R is the only code that the user should need to interact with.
+To run the code and create a report, open the lipidomics_report_wrapper.R script and run the two lines of code.
 <br><br> 
     
 ## Config file  
