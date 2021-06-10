@@ -51,13 +51,16 @@ paired_lineplot <- function(data_tib, val = "value"){
 one_lipid <- long_stats_pvals %>%
   filter(lipid_name == lipid_to_plot)
 
-fig_out <- paste0(figure_output, "/individual_lipid_plots/", one_lipid, "-")
-
+lipid_no_space <- stringr::str_replace_all(lipid_to_plot, fixed(" "), "-")
+lipid_no_space <- stringr::str_replace_all(lipid_no_space, fixed(":"), "-")
+#fig_out <- paste0(figure_output, lipid_no_space, '-')
+fig_out <- paste0(figure_output, 'individual_lipid_plots/', lipid_no_space, '-')
 ```
 
 <div class = "row">
 <div class = "col-md-6">
-```{r}
+```{r, individual_plot, fig.path=fig_out}
+#, fig.path=fig_out}
 test <- one_lipid$test_type[1]
 set.seed(1)
 
