@@ -16,36 +16,32 @@ totals <- tidy_data %>%
   ungroup() %>%
   mutate(pie_class = if_else(max_percent > 1, class, "other"))
 
-bar_totals_linear <- tidy_data %>%
+total_of_means <- tidy_data %>%
   group_by(class, condition, sample_name) %>%
-  dplyr::summarise(total = sum(value)) %>%
+  summarise(total = sum(value)) %>%
   ungroup() %>%
   group_by(class, condition) %>%
   dplyr::summarise(
     mean_total = mean(total),
     se_total = sd(total)/sqrt(dplyr::n())
   ) %>%
-  ungroup()
-
-bar_totals_log2 <- tidy_data %>%
-  group_by(class, condition, sample_name) %>%
-  dplyr::summarise(total = sum(log2_value)) %>%
   ungroup() %>%
-  group_by(class, condition) %>%
-  dplyr::summarise(
-    mean_total = mean(total),
-    se_total = sd(total)/sqrt(dplyr::n())
-  ) %>%
-  ungroup()
-
-mean_log2_class <- tidy_data %>%
-  dplyr::group_by(class, condition) %>%#, sample_name) %>%
-  dplyr::summarise(
-    mean = mean(log2_value), 
-  ) %>%
+  group_by(condition) %>%
+  mutate(percent = (mean_total/sum(mean_total))*100) %>%
   ungroup() %>%
-  pivot_wider(names_from = condition, values_from = mean) %>%
-  mutate(ratio = .data[[exp_conditions[1]]] - .data[[exp_conditions[2]]])
+  group_by(class) %>%
+  mutate(max_percent = max(percent)) %>%
+  ungroup() %>%
+  mutate(pie_class = if_else(max_percent > 1, class, "other"))
+
+# mean_log2_class <- tidy_data %>%
+#   dplyr::group_by(class, condition) %>%#, sample_name) %>%
+#   dplyr::summarise(
+#     mean = mean(log2_value), 
+#   ) %>%
+#   ungroup() %>%
+#   pivot_wider(names_from = condition, values_from = mean) %>%
+#   mutate(ratio = .data[[exp_conditions[1]]] - .data[[exp_conditions[2]]])
 ```
 
 ```{r}
@@ -125,17 +121,19 @@ totals %>%
 
 ### Mean of total amounts 
 ```{r}
-bar_totals_linear %>%
-  dplyr::arrange(desc(mean_total)) %>%
-  select(class, condition, mean_total) %>%
-  tidyr::pivot_wider(names_from = condition, values_from = c(mean_total)) %>%
+total_of_means %>%
+  dplyr::arrange(desc(max_percent)) %>%
+  select(class, condition, mean_total, percent) %>%
+  tidyr::pivot_wider(names_from = condition, values_from = c(mean_total, percent)) %>%
   DT::datatable(
       rownames = FALSE, 
       options = list(pageLength = 10, dom = "tlip"), 
+     # filter = list(position = "top"),
       escape = FALSE
       ) %>%
-    DT::formatRound(digits = 2, 2:3) 
+    DT::formatRound(digits = 2, 2:5) 
 ```
+
 </div>
 </div>
 
@@ -145,31 +143,8 @@ bar_totals_linear %>%
 
 ### Mean of total amounts - linear scale
 
-```{r, eval = FALSE}
-bar_totals_linear %>%
-  dplyr::arrange(desc(mean_total)) %>%
-  ggplot(aes(x = class, y = mean_total, fill = condition)) + 
-  geom_bar(
-    colour = "black", 
-    position= position_dodge(width = 0.8),
-    width = 0.8,
-    stat="identity",
-    lwd = 0.8
-  ) + 
-  geom_errorbar(
-      aes(ymin=mean_total-se_total, ymax=mean_total+se_total), 
-      position = position_dodge(width = dodge_width), 
-      width = 0.25,
-      lwd = 0.8
-    ) +
-  scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 90, face = "bold")) +
-  xlab("")
-```
-
 ```{r, bar_totals, fig.width = 10, fig.height=8}
-bar_totals_linear %>%
+total_of_means %>%
   left_join(superclasses) %>%
     ggplot(aes(x = class, y = mean_total, fill = condition)) + 
     geom_bar(
@@ -192,6 +167,29 @@ bar_totals_linear %>%
     facet_wrap(~ superclass, scales = "free")
 ```
 
+<br>
+<hr>
+<br>
+
+### Mean of total amounts - log2 scale
+
+```{r, boxplot_totals, fig.width = 10, fig.height=8}
+tidy_data %>%
+  left_join(superclasses) %>%
+    ggplot(aes(x = class, y = log2_value, fill = condition)) + 
+    stat_boxplot(
+     # colour = "black"#, 
+      position= position_dodge(width = 0.9),
+      width = 0.6,
+      lwd = 0.8
+    ) + 
+    scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, face = "bold")) +
+    facet_wrap(~ superclass, scales = "free")
+```
+
+
 ```{r forest_class, fig.width = 10, fig.height=8}
 t_test_by_class %>%
   left_join(superclasses) %>%
@@ -203,33 +201,6 @@ t_test_by_class %>%
     facet_wrap(~ superclass, scales = "free")
 ```
 
-```{r}
-#custom_forest(t_test_res, lipid_class, abundance_level = "high")
-```
-
- 
-```{r, eval = FALSE}
-### Totals - log2 scale  
-bar_totals_linear %>%
-  ggplot(aes(x = class, y = log2(mean_total), fill = condition)) + 
-  geom_bar(
-    colour = "black", 
-    position= position_dodge(width = 0.8),
-    width = 0.8,
-    stat="identity",
-    lwd = 0.8
-  ) + 
-  # geom_errorbar(
-  #     aes(ymin=log2(mean_total)-log2(se_total), ymax=log2(mean_total)+log2(se_total)), 
-  #     position = position_dodge(width = dodge_width), 
-  #     width = 0.25,
-  #     lwd = 0.8
-  #   ) +
-  scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 90, face = "bold")) +
-  xlab("")
-```
 
 ```{r, results="asis"}
 # doesn't work properly using headers as it messes up the tabs
@@ -291,17 +262,19 @@ annot_colours <- list(
 
 <div class = "row">
 <div class = "col-md-4">
-<br><br><br><br>
+<br><br>
 The y axis shows the –log10(padj); that is the negative of the log-transformed p-values, 
-adjusted for multiple comparisons.
+adjusted for multiple comparisons.  
 The x axis shows the magnitude of difference between the conditions for that lipid, 
-expressed as a ratio.
+expressed as a ratio.  
+Any points to the right of the grey dashed line have higher values in `r exp_conditions[1]` compared to `r exp_conditions[2]`, and vice versa for points left of the grey line.  
 
-Each point on the plot is a lipid (subclass?).   
+Each point on the plot is a lipid subclass.   
 Hover over a point to see the name.
 
-The dashed red line shows significance (p<0.05) i.e. any points above it represent 
+The dashed red line shows significance (adj p<0.05) i.e. any points above it represent 
 a significant difference between the 2 conditions.
+
 
 </div>
 <div class = "col-md-8">
@@ -389,16 +362,3 @@ heatmap3
 
 ```
 
-```{r, eval = FALSE}
-pdf(file = paste0(params$output_folder, "/heatmap1.pdf"))
-heatmap1
-dev.off()
-
-pdf(file = paste0(params$output_folder, "/heatmap2.pdf"))
-heatmap2
-dev.off()
-
-pdf(file = paste0(params$output_folder, "/heatmap3.pdf"))
-heatmap3
-dev.off()
-```
