@@ -35,9 +35,10 @@ library(knitr)
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, comment = FALSE)
 
 figure_output <- paste0(params$output_folder, "/figures/")
-#knitr::opts_chunk$set(dev = c('png', 'pdf'), fig.path='figures/') 
-knitr::opts_chunk$set(dev = c('png', 'pdf', 'svg'), fig.path = figure_output) 
-
+# The first format has to be png so that the html report renders properly,
+# then any others can be added, and they'll all be written out to the fig.path
+# directory.
+knitr::opts_chunk$set(dev = c('png', 'pdf'), fig.path = figure_output) 
 
 library(ggplot2)
 library(tidyverse)
