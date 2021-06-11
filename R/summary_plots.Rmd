@@ -34,14 +34,14 @@ total_of_means <- tidy_data %>%
   ungroup() %>%
   mutate(pie_class = if_else(max_percent > 1, class, "other"))
 
-# mean_log2_class <- tidy_data %>%
-#   dplyr::group_by(class, condition) %>%#, sample_name) %>%
-#   dplyr::summarise(
-#     mean = mean(log2_value), 
-#   ) %>%
-#   ungroup() %>%
-#   pivot_wider(names_from = condition, values_from = mean) %>%
-#   mutate(ratio = .data[[exp_conditions[1]]] - .data[[exp_conditions[2]]])
+mean_log2_class <- tidy_data %>%
+  dplyr::group_by(class, condition) %>%#, sample_name) %>%
+  dplyr::summarise(
+    mean = mean(log2_value),
+  ) %>%
+  ungroup() %>%
+  pivot_wider(names_from = condition, values_from = mean) %>%
+  mutate(ratio = .data[[exp_conditions[1]]] - .data[[exp_conditions[2]]])
 ```
 
 ```{r}
