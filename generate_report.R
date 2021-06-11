@@ -77,9 +77,10 @@ if(output_fullpath_supplied) {
   out_file <- config[["outfile"]]
 } else {
   #output_location <- paste0(dirname(config[["data_file_path"]]), "/output")
-  output_location <- paste0(tools::file_path_as_absolute(dirname(config[["data_file_path"]])),"/output") 
+  output_base <- tools::file_path_as_absolute(dirname(config[["data_file_path"]]))
+  output_location <- paste0(output_base,"/output") 
   if(! dir.exists(output_location)) {
-    assertthat::is.writeable(output_location) # check it can be created
+    assertthat::is.writeable(output_base) # check it can be created
     dir.create(output_location) 
   }
   out_file <- paste0(output_location, "/", config[["outfile"]])
