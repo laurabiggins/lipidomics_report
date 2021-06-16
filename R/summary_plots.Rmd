@@ -31,6 +31,7 @@ total_of_means <- tidy_data %>%
   ungroup() %>%
   group_by(class) %>%
   mutate(max_percent = max(percent)) %>%
+  mutate(max_mean_total = max(mean_total)) %>%
   ungroup() %>%
   mutate(pie_class = if_else(max_percent > 1, class, "other"))
 
@@ -96,46 +97,29 @@ pie(
   )
 ```
 
-<div class = "row">
-<div class = "col-md-7">
-
 ### Total amounts
 ```{r}
-totals %>%
+totals_table <- totals %>%
+  left_join(total_of_means) %>%
   dplyr::arrange(desc(max_percent)) %>%
-  select(class, condition, total, percent) %>%
-  tidyr::pivot_wider(names_from = condition, values_from = c(total, percent)) %>%
+  select(class, condition, total, mean_total, percent) %>%
+  tidyr::pivot_wider(names_from = condition, values_from = c(total, mean_total, percent))
+
+totals_table %>%
   DT::datatable(
       rownames = FALSE, 
       options = list(pageLength = 10, dom = "tlip"), 
      # filter = list(position = "top"),
       escape = FALSE
       ) %>%
-    DT::formatRound(digits = 2, 2:5) 
+    DT::formatRound(digits = 2, 2:7) 
 ```
-</div>
-<div class = "col-md-1">
 
-</div>
-<div class = "col-md-4">
-
-### Mean of total amounts 
 ```{r}
-total_of_means %>%
-  dplyr::arrange(desc(max_percent)) %>%
-  select(class, condition, mean_total, percent) %>%
-  tidyr::pivot_wider(names_from = condition, values_from = c(mean_total, percent)) %>%
-  DT::datatable(
-      rownames = FALSE, 
-      options = list(pageLength = 10, dom = "tlip"), 
-     # filter = list(position = "top"),
-      escape = FALSE
-      ) %>%
-    DT::formatRound(digits = 2, 2:5) 
+out_file <- paste0(params$output_folder, "/totals_table.csv") 
+readr::write_csv(stats_pvals, file = out_file) 
 ```
 
-</div>
-</div>
 
 <br><br>
 <hr>
@@ -143,28 +127,46 @@ total_of_means %>%
 
 ### Mean of total amounts - linear scale
 
-```{r, bar_totals, fig.width = 10, fig.height=8}
-total_of_means %>%
+The star
+
+```{r, bar_totals_processing}
+pvals_by_class <- select(t_test_by_class, class, padj)
+  
+bar_total_data <- total_of_means %>%
   left_join(superclasses) %>%
-    ggplot(aes(x = class, y = mean_total, fill = condition)) + 
-    geom_bar(
-      colour = "black", 
-      position= position_dodge(width = 0.8),
-      width = 0.8,
-      stat="identity",
+  group_by(superclass) %>%
+  mutate(max_super_value = max(mean_total)) %>%
+  ungroup() %>%
+  select(superclass, class, condition, mean_total, se_total, max_mean_total, max_super_value) %>%
+  left_join(pvals_by_class) %>%
+  mutate(bar_label = if_else(padj < 0.05, "*", ""))
+```
+
+```{r, bar_totals, fig.width = 10, fig.height=8}
+bar_total_data %>%
+  ggplot(aes(x = class, y = mean_total, fill = condition)) + 
+  geom_bar(
+    colour = "black", 
+    position= position_dodge(width = 0.8),
+    width = 0.8,
+    stat="identity",
+    lwd = 0.8
+  ) + 
+  geom_errorbar(
+      aes(ymin=mean_total-se_total, ymax=mean_total+se_total), 
+      position = position_dodge(width = dodge_width), 
+      width = 0.25,
       lwd = 0.8
-    ) + 
-    geom_errorbar(
-        aes(ymin=mean_total-se_total, ymax=mean_total+se_total), 
-        position = position_dodge(width = dodge_width), 
-        width = 0.25,
-        lwd = 0.8
-      ) +
-    scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 90, face = "bold")) +
-    xlab("") +
-    facet_wrap(~ superclass, scales = "free")
+    ) +
+  geom_text(aes(y = max_mean_total), 
+            nudge_y = bar_total_data$max_super_value*0.05, 
+            label = bar_total_data$bar_label,
+            size = 6) +
+  scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, face = "bold")) +
+  xlab("") +
+  facet_wrap(~ superclass, scales = "free")
 ```
 
 <br>
