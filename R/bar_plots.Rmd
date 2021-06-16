@@ -61,7 +61,7 @@ custom_forest(t_test_res, lipid_class, abundance_level = "high")
 ```
 
 ```{r, eval = !any_high, results="asis"}
-cat("No high abundance lipids in this class.")
+cat("All median values for this class <= 1 so will be in the low abundance set")
 ```
 
 <br>  
@@ -74,7 +74,7 @@ custom_forest(t_test_res, lipid_class, abundance_level = "low")
 ```
 
 ```{r, eval = !any_low, results="asis"}
-cat("No low abundance lipids in this class.")
+cat("All median values for this class > 1 so will be in the high abundance set")
 ```
 
 <br> 
