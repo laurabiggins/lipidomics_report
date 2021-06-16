@@ -229,7 +229,7 @@ t_test_res <- tidy_data %>%
 
 ### Bar plot information
 The bar plots show linear median values for each condition within each lipid subclass. They are split between low and high abundance values, where low abundance refers to lipid subclasses with a median 
-value < 1 in either condition.
+value <= 1 in either condition.
 The points show each individual value.
    
 ### Forest plot information    
