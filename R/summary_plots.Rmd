@@ -302,6 +302,33 @@ plotly::ggplotly(p, tooltip = "lipid_name")
 
 ### Heatmaps
 
+#### Lipids that change between conditions, with row clustering and column clustering  
+  
+Row labels are shown if there are < 70 rows. 
+
+```{r, heatmap1, fig.height = 8, fig.width = 10}
+sig_lipids <- t_test_res %>%
+  filter(padj < 0.05) %>%
+  pull(lipid_name)
+  
+heatmap_sig <- heatmap_data[sig_lipids,]
+row_annot_sig <- row_annotation[sig_lipids,]
+too_many_names <- if_else(nrow(heatmap_sig) > 70, FALSE, TRUE)
+
+heatmap0 <- pheatmap::pheatmap(
+  heatmap_sig,
+  scale = "row",
+  annotation_row = row_annotation,
+  annotation_col = col_annotation,
+  annotation_colors = annot_colours, 
+  show_rownames = too_many_names
+)
+
+heatmap0
+```
+
+
+
 #### Rows ordered by lipid subclass, columns ordered by condition, no clustering
 
 ```{r, heatmap1, fig.height = 8, fig.width = 10}
