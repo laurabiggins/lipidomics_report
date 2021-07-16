@@ -7,10 +7,10 @@ output:
     self_contained: yes
 output_file: lip
 params: 
-  #metadata_file: ../data/metadata.txt
-  #input_file: ../data/alldata.lipidomics_summary_test_data.tsv
-  input_file: D:/projects/lipidomics/example_data/CSC/datasets/alldata.lipidomics_summary_MiaPaca2_Parental-CSC.csv
-  metadata_file: D:/projects/lipidomics/example_data/CSC/metadata_4_reps.txt
+  metadata_file: ../data/metadata.txt
+  input_file: ../data/alldata.lipidomics_summary_test_data.tsv
+  #input_file: D:/projects/lipidomics/example_data/CSC/datasets/alldata.lipidomics_summary_MiaPaca2_Parental-CSC.csv
+  #metadata_file: D:/projects/lipidomics/example_data/CSC/metadata_4_reps.txt
   meta_sample_name: SampleName
   meta_condition_type: Type
   meta_rep: Rep
@@ -20,8 +20,8 @@ params:
   quick_test: TRUE
   output_folder: out
   bar_class_ylabel: value
-  #control: Control
-  control: Parental
+  control: Control
+  #control: Parental
 
 ---
 
