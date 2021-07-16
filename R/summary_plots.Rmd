@@ -329,7 +329,7 @@ heatmap0
 
 
 
-#### Rows ordered by lipid subclass, columns ordered by condition, no clustering
+#### All lipids, rows ordered by lipid subclass, columns ordered by condition, no clustering
 
 ```{r, heatmap1, fig.height = 8, fig.width = 10}
 heatmap1 <- pheatmap::pheatmap(
@@ -351,7 +351,7 @@ heatmap1
 <br>
 <br>
 
-#### Rows ordered by lipid subclass, clustered by columns
+#### All lipids, rows ordered by lipid subclass, clustered by columns
 
 ```{r, heatmap2, fig.height = 8, fig.width = 10}
 heatmap2 <- pheatmap::pheatmap(
@@ -373,7 +373,7 @@ heatmap2
 <br>
 <br>
 
-#### With row clustering and column clustering
+#### All lipids, with row clustering and column clustering
 
 ```{r, heatmap3, fig.height = 8, fig.width = 10}
 too_many_names <- if_else(nrow(heatmap_data) > 70, FALSE, TRUE)
