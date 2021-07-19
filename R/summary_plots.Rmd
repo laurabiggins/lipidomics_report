@@ -128,7 +128,7 @@ Bar shows median value per class.
 
 T-tests were performed on log transformed data. Bars are annotated with a star if there was a significant difference between the conditions (adjusted p-value < 0.05). 
 
-```{r barplot_totals_median}
+```{r barplot_totals_median, fig.width = 10, fig.height=8}
 pvals_by_class <- select(t_test_by_class, class, padj)
 
 bar_data_totals <- bar_data_totals %>%
@@ -182,7 +182,7 @@ bar_total_data <- total_of_means %>%
   mutate(bar_label = if_else(padj < 0.05, "*", ""))
 ```
 
-```{r, bar_totals, fig.width = 10, fig.height=8}
+```{r, bar_totals, fig.width = 10, fig.height=8, eval = FALSE}
 bar_total_data %>%
   ggplot(aes(x = class, y = mean_total, fill = condition)) + 
   geom_bar(
@@ -215,7 +215,7 @@ bar_total_data %>%
 
 ### Total amounts - log2 scale
 
-```{r, boxplot_totals, fig.width = 10, fig.height=8}
+```{r, boxplot_totals, fig.width = 10, fig.height=8, eval = FALSE}
 tidy_data %>%
   left_join(superclasses) %>%
     ggplot(aes(x = class, y = log2_value, fill = condition)) + 
@@ -244,6 +244,8 @@ tidy_data %>%
       width = 0.6,
       lwd = 0.8
     ) + 
+    geom_point(position = position_dodge(width = 0.9), alpha = 0.8, shape = 21) +
+    #geom_jitter(alpha = 0.8, shape = 21, width = 0.1) +
     scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 90, face = "bold")) +
