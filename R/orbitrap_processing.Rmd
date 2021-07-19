@@ -15,8 +15,8 @@ params:
   meta_condition_type: Type
   meta_rep: Rep
   lipid_name_col: X1
-  #paired: TRUE
-  paired: FALSE
+  paired: TRUE
+  #paired: FALSE
   quick_test: TRUE
   output_folder: out
   bar_class_ylabel: value
@@ -128,6 +128,19 @@ tidy_data <- tidy_data %>%
 # run once
 dodge_width <- 0.8
 
+# totals, linear, median
+bar_data_totals <- tidy_data %>%
+  dplyr::group_by(class, condition) %>%
+  dplyr::summarise(median = median(value)) %>%
+  ungroup() %>%
+  group_by(class) %>%
+#  mutate(min_median = min(median)) %>%
+  mutate(max_median = max(median)) %>%
+  ungroup() %>%
+  left_join(tidy_data) %>%
+  select(class, value, median, condition, max_median) 
+
+# split into subclasses
 bar_data_linear_median <- tidy_data %>%
   dplyr::group_by(class, lipid_name, condition) %>%
   dplyr::summarise(median = median(value)) %>%
