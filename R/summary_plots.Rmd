@@ -163,12 +163,6 @@ bar_data_totals %>%
 ```
 
 
-### Mean of total amounts - linear scale
-  
-These bar plots may be misleading if the data is not normally distributed.
-
-T-tests were performed on log transformed data. Bars are annotated with a star if there was a significant difference between the conditions (adjusted p-value < 0.05). 
-
 ```{r, bar_totals_processing}
 pvals_by_class <- select(t_test_by_class, class, padj)
   
@@ -183,6 +177,12 @@ bar_total_data <- total_of_means %>%
 ```
 
 ```{r, bar_totals, fig.width = 10, fig.height=8, eval = FALSE}
+### Mean of total amounts - linear scale
+  
+#These bar plots may be misleading if the data is not normally distributed.
+
+#T-tests were performed on log transformed data. Bars are annotated with a star if there was a significant difference between the conditions (adjusted p-value < 0.05). 
+
 bar_total_data %>%
   ggplot(aes(x = class, y = mean_total, fill = condition)) + 
   geom_bar(
@@ -213,7 +213,7 @@ bar_total_data %>%
 <hr>
 <br>
 
-### Total amounts - log2 scale
+
 
 ```{r, boxplot_totals, fig.width = 10, fig.height=8, eval = FALSE}
 tidy_data %>%
@@ -232,7 +232,7 @@ tidy_data %>%
     theme(axis.text.x = element_text(angle = 90, face = "bold")) +
     facet_wrap(~ superclass, scales = "free")
 ```
-
+### Total amounts - log2 scale
 
 ```{r, boxplot_totals, fig.width = 10, fig.height=8}
 tidy_data %>%
