@@ -124,9 +124,9 @@ readr::write_csv(totals_table, file = out_file)
 
 ### Total amounts - linear scale
 
-T-tests were performed. Bars are annotated with a star if there was a significant difference between the conditions (adjusted p-value < 0.05). 
 Bar shows median value per class.
 
+T-tests were performed on log transformed data. Bars are annotated with a star if there was a significant difference between the conditions (adjusted p-value < 0.05). 
 
 ```{r barplot_totals_median}
 pvals_by_class <- select(t_test_by_class, class, padj)
@@ -167,7 +167,7 @@ bar_data_totals %>%
   
 These bar plots may be misleading if the data is not normally distributed.
 
-T-tests were performed. Bars are annotated with a star if there was a significant difference between the conditions (adjusted p-value < 0.05). 
+T-tests were performed on log transformed data. Bars are annotated with a star if there was a significant difference between the conditions (adjusted p-value < 0.05). 
 
 ```{r, bar_totals_processing}
 pvals_by_class <- select(t_test_by_class, class, padj)
@@ -220,12 +220,14 @@ tidy_data %>%
   left_join(superclasses) %>%
     ggplot(aes(x = class, y = log2_value, fill = condition)) + 
     geom_violin(
-     # colour = "black"#, 
       position= position_dodge(width = 0.9),
       width = 0.8,
-      lwd = 0.8
-    ) + 
+      lwd = 0.8,
+      draw_quantiles = c(0.25, 0.5, 0.75)
+    ) +
     scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
+    geom_point(position = position_dodge(width = 0.9), alpha = 0.8, shape = 21) +
+    #geom_boxplot(width=0.2, position = position_dodge(width = 0.9), alpha = 0.1) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 90, face = "bold")) +
     facet_wrap(~ superclass, scales = "free")
