@@ -1,5 +1,6 @@
 
 ```{r}
+#!! sort this out - we don't need 2 totals tables
 totals <- tidy_data %>%
   group_by(class, condition) %>%
   summarise(total = sum(value)) %>%
@@ -95,6 +96,7 @@ purrr::walk(levels(pie_data$condition), plot_base_pie)
 ### Total amounts
 ```{r}
 totals_table <- totals %>%
+  select(class, condition, total) %>%
   left_join(total_of_means) %>%
   dplyr::arrange(desc(max_percent)) %>%
   select(class, condition, total, mean_total, percent) %>%
@@ -120,7 +122,50 @@ readr::write_csv(totals_table, file = out_file)
 <hr>
 <br><br>
 
+### Total amounts - linear scale
+
+T-tests were performed. Bars are annotated with a star if there was a significant difference between the conditions (adjusted p-value < 0.05). 
+Bar shows median value per class.
+
+
+```{r barplot_totals_median}
+pvals_by_class <- select(t_test_by_class, class, padj)
+
+bar_data_totals <- bar_data_totals %>%
+  left_join(superclasses) %>%
+  mutate(max_super_value = max(max_median)) %>%
+  left_join(pvals_by_class) %>%
+  mutate(bar_label = if_else(padj < 0.05, "*", "")) 
+
+bar_data_totals %>%  
+    ggplot(aes(x = class, y = value, fill = condition)) +
+    geom_bar(aes(y = median), 
+           colour = "black", 
+           position= position_dodge(width = dodge_width),
+           width = 0.8,
+           stat="identity",
+           lwd = 0.8) + 
+    geom_text(aes(y = max_median), 
+            nudge_y = bar_data_totals$max_super_value*0.05, 
+            label = bar_data_totals$bar_label,
+            size = 6,
+            col = "red") +
+    #geom_point(aes(color = condition), position= position_dodge(width = dodge_width)) +
+    geom_point(shape = 21, position= position_dodge(width = dodge_width)) +
+    scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
+   # scale_color_manual(values = c("#9ac4d6", "#f7f7c3")) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, face = "bold")) +
+    xlab("") +
+    ylab(params$bar_class_ylabel) +
+    facet_wrap(~ superclass, scales = "free")
+
+```
+
+
 ### Mean of total amounts - linear scale
+  
+These bar plots may be misleading if the data is not normally distributed.
 
 T-tests were performed. Bars are annotated with a star if there was a significant difference between the conditions (adjusted p-value < 0.05). 
 
@@ -169,6 +214,23 @@ bar_total_data %>%
 <br>
 
 ### Total amounts - log2 scale
+
+```{r, boxplot_totals, fig.width = 10, fig.height=8}
+tidy_data %>%
+  left_join(superclasses) %>%
+    ggplot(aes(x = class, y = log2_value, fill = condition)) + 
+    geom_violin(
+     # colour = "black"#, 
+      position= position_dodge(width = 0.9),
+      width = 0.8,
+      lwd = 0.8
+    ) + 
+    scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, face = "bold")) +
+    facet_wrap(~ superclass, scales = "free")
+```
+
 
 ```{r, boxplot_totals, fig.width = 10, fig.height=8}
 tidy_data %>%
@@ -313,25 +375,28 @@ plotly::ggplotly(p, tooltip = "lipid_name")
   
 Row labels are shown if there are < 70 rows. 
 
-```{r, heatmap1, fig.height = 8, fig.width = 10}
+```{r, heatmap1, fig.height = 8, fig.width = 10, results = "asis"}
 sig_lipids <- t_test_res %>%
   filter(padj < 0.05) %>%
   pull(lipid_name)
+
+if(length(sig_lipids) >= 2){
   
-heatmap_sig <- heatmap_data[sig_lipids,]
-row_annot_sig <- row_annotation[sig_lipids,]
-too_many_names <- if_else(nrow(heatmap_sig) > 70, FALSE, TRUE)
-
-heatmap0 <- pheatmap::pheatmap(
-  heatmap_sig,
-  scale = "row",
-  annotation_row = row_annotation,
-  annotation_col = col_annotation,
-  annotation_colors = annot_colours, 
-  show_rownames = too_many_names
-)
-
-heatmap0
+  heatmap_sig <- heatmap_data[sig_lipids,]
+  row_annot_sig <- row_annotation[sig_lipids,]
+  too_many_names <- if_else(nrow(heatmap_sig) > 70, FALSE, TRUE)
+  
+  heatmap0 <- pheatmap::pheatmap(
+    heatmap_sig,
+    scale = "row",
+    annotation_row = row_annotation,
+    annotation_col = col_annotation,
+    annotation_colors = annot_colours, 
+    show_rownames = too_many_names
+  )
+  
+  heatmap0
+} else cat("Not enough significant lipids to plot a heatmap")
 ```
 
 
