@@ -89,22 +89,21 @@ test_name_for_report <- switch(test,
       none = "none",
       paired_none = "none"
       )
+small_text <- function(x, size = 12) {
+  sprintf("<span style='font-size: %spx;'>%s</span>", size, x)
+}
 ```
 
 #### Test performed: `r test_name_for_report`
+#### p-value (corrected) : `r one_lipid$adj_pval[1]` 
 
-#### p-value (uncorrected) : `r one_lipid$p_val[1]`    
-#### p-value (corrected) : `r one_lipid$adj_pval[1]`    
-```{r, results="asis", eval = FALSE}
-cat(one_lipid$p_val[1])
+```{r, results="asis"}
+uncorr_pval <- paste0("p-value (uncorrected) : ", one_lipid$p_val[1])
+cat(small_text(uncorr_pval))
 ```
 <br><br><br>
 
 ```{r, results="asis"}
-small_text <- function(x, size = 12) {
-  sprintf("<span style='font-size: %spx;'>%s</span>", size, x)
-}
-
 cat(small_text(stat_test_info(one_lipid$test_type[1])))
 ```
 
