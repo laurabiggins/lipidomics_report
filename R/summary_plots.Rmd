@@ -88,29 +88,8 @@ plot_base_pie <- function(pie_condition){
   )
 }
 
-#purrr::map(levels(pie_data$condition), plot_base_pie)
-
 purrr::walk(levels(pie_data$condition), plot_base_pie)
-# pie_cond1 <- pie_data %>%
-#   filter(condition == levels(condition)[1])
-# 
-# pie_cond2 <- pie_data %>%
-#   filter(condition == levels(condition)[1])
-# 
-# n_col <- nrow(pie_cond1)
-# 
-# pie(
-#   pie_cond1$total_pie_percent, 
-#   labels=pie_cond1$pie_class, 
-#   col=rainbow(n_col),
-#   main = exp_conditions[1]
-# )
-# pie(
-#   pie_cond2$total_pie_percent, 
-#   labels=pie_cond2$pie_class, 
-#   col=rainbow(n_col),
-#   main = exp_conditions[2]
-#   )
+
 ```
 
 ### Total amounts
@@ -143,7 +122,7 @@ readr::write_csv(totals_table, file = out_file)
 
 ### Mean of total amounts - linear scale
 
-The star
+T-tests were performed. Bars are annotated with a star if there was a significant difference between the conditions (adjusted p-value < 0.05). 
 
 ```{r, bar_totals_processing}
 pvals_by_class <- select(t_test_by_class, class, padj)
@@ -189,7 +168,7 @@ bar_total_data %>%
 <hr>
 <br>
 
-### Mean of total amounts - log2 scale
+### Total amounts - log2 scale
 
 ```{r, boxplot_totals, fig.width = 10, fig.height=8}
 tidy_data %>%
