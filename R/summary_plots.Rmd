@@ -1,6 +1,3 @@
-```{r}
-# requires the all_data df
-```
 
 ```{r}
 totals <- tidy_data %>%
@@ -35,6 +32,8 @@ total_of_means <- tidy_data %>%
   ungroup() %>%
   mutate(pie_class = if_else(max_percent > 1, class, "other"))
 
+conditions <- unique(pull(tidy_data, condition))
+
 mean_log2_class <- tidy_data %>%
   dplyr::group_by(class, condition) %>%#, sample_name) %>%
   dplyr::summarise(
@@ -42,7 +41,8 @@ mean_log2_class <- tidy_data %>%
   ) %>%
   ungroup() %>%
   pivot_wider(names_from = condition, values_from = mean) %>%
-  mutate(ratio = .data[[exp_conditions[1]]] - .data[[exp_conditions[2]]])
+  mutate(ratio = .data[[levels(conditions)[2]]] - .data[[levels(conditions)[1]]])
+  #mutate(ratio = .data[[exp_conditions[1]]] - .data[[exp_conditions[2]]])
 ```
 
 ```{r}
@@ -75,26 +75,42 @@ pie_data <- totals %>%
   summarise(total_pie_percent = sum(percent)) %>%
   ungroup()
 
-pie_cond1 <- pie_data %>%
-  filter(condition == exp_conditions[1])
-
-pie_cond2 <- pie_data %>%
-  filter(condition == exp_conditions[2])
-
-n_col <- nrow(pie_cond1)
-
-pie(
-  pie_cond1$total_pie_percent, 
-  labels=pie_cond1$pie_class, 
-  col=rainbow(n_col),
-  main = exp_conditions[1]
-)
-pie(
-  pie_cond2$total_pie_percent, 
-  labels=pie_cond2$pie_class, 
-  col=rainbow(n_col),
-  main = exp_conditions[2]
+plot_base_pie <- function(pie_condition){
+  
+  pie_condition_data <- pie_data %>%
+    filter(condition == pie_condition)
+  
+  pie(
+    pie_condition_data$total_pie_percent, 
+    labels = pie_condition_data$pie_class, 
+    col    = rainbow(nrow(pie_condition_data)),
+    main   = pie_condition
   )
+}
+
+#purrr::map(levels(pie_data$condition), plot_base_pie)
+
+purrr::walk(levels(pie_data$condition), plot_base_pie)
+# pie_cond1 <- pie_data %>%
+#   filter(condition == levels(condition)[1])
+# 
+# pie_cond2 <- pie_data %>%
+#   filter(condition == levels(condition)[1])
+# 
+# n_col <- nrow(pie_cond1)
+# 
+# pie(
+#   pie_cond1$total_pie_percent, 
+#   labels=pie_cond1$pie_class, 
+#   col=rainbow(n_col),
+#   main = exp_conditions[1]
+# )
+# pie(
+#   pie_cond2$total_pie_percent, 
+#   labels=pie_cond2$pie_class, 
+#   col=rainbow(n_col),
+#   main = exp_conditions[2]
+#   )
 ```
 
 ### Total amounts
@@ -117,7 +133,7 @@ totals_table %>%
 
 ```{r}
 out_file <- paste0(params$output_folder, "/totals_table.csv") 
-readr::write_csv(stats_pvals, file = out_file) 
+readr::write_csv(totals_table, file = out_file) 
 ```
 
 
@@ -224,6 +240,22 @@ heatmap_data <- tibble::column_to_rownames(var_above0, "lipid_name")
 ```  
 
 ```{r, heatmap_processing2}
+# rearrange matrix so control samples come first
+samples_conditions <- enframe(colnames(heatmap_data), name = NULL, value = "sample_name") %>%
+  left_join(meta_type) 
+
+control_samples <- samples_conditions %>%
+  filter(condition == params$control) %>%
+  pull(sample_name)
+
+heatmap_data <- relocate(heatmap_data, control_samples)
+
+col_annotation <- samples_conditions %>%
+  tibble::column_to_rownames("sample_name") %>%
+  arrange(condition)
+  
+#---------------------------------------------
+
 classes <- tidy_data %>%
   select(lipid_name, class) %>%
   distinct()
@@ -235,10 +267,6 @@ df_lipids <- var_above0 %>%
 
 row_annotation <- tibble::column_to_rownames(df_lipids, "lipid_name")
 
-col_annotation <- enframe(colnames(heatmap_data), name = NULL, value = "sample_name") %>%
-  left_join(meta_type) %>%
-  tibble::column_to_rownames("sample_name")
-
 # Lipid classes need further sorting to create custom row annotations where only
 # the class name is displayed rather than each individual lipid.
 lipid_summary <- get_lipid_summary(df_lipids)
@@ -246,7 +274,7 @@ lipid_labels <- create_lipid_class_labels(lipid_summary, nrow(df_lipids))
 lipid_colours <- create_lipid_colours(
   class_names = dplyr::pull(lipid_summary, class)
 )
-group_colours <- stats::setNames(c("blue", "darkgreen"), exp_conditions)
+group_colours <- stats::setNames(c("blue", "darkgreen"), levels(col_annotation$condition))
 
 annot_colours <- list(
   condition = group_colours,

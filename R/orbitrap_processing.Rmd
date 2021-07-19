@@ -21,7 +21,7 @@ params:
   output_folder: out
   bar_class_ylabel: value
   control: Control
-  #control: Parental
+  #control: Stem
 
 ---
 
@@ -94,6 +94,10 @@ if(params$paired) {
   meta_type <- meta_info %>%
     dplyr::select(sample_name, condition)
 }
+meta_type <- meta_type %>%
+  mutate(condition = forcats::as_factor(condition)) %>%
+  mutate(condition = forcats::fct_relevel(condition, params$control))
+
 
 tidy_data <- all_data %>%
   tidyr::pivot_longer(cols = -lipid_name, names_to = "sample_name") %>%
@@ -101,11 +105,14 @@ tidy_data <- all_data %>%
   tidyr::separate(lipid_name, sep = " ", into = c("class", NA), remove = FALSE) %>%
   left_join(meta_type) %>%
   dplyr::mutate(log2_value = log2(value)) %>%
-  dplyr::mutate(log2_value = if_else(log2_value == "-Inf", 0, log2_value)) # we don't want -Inf values
+  dplyr::mutate(log2_value = if_else(log2_value == "-Inf", 0, log2_value)) #%>% # we don't want -Inf values 
+  #mutate(condition = forcats::as_factor(condition)) %>%
+  #mutate(condition = forcats::fct_relevel(condition, params$control))
+
 
 exp_conditions <- unique(pull(tidy_data, condition))
 exp_conditions <- exp_conditions[1:2] # this script can only deal with 2 conditions
-exp_conditions <- c(exp_conditions[exp_conditions != params$control], params$control)
+#exp_conditions <- c(exp_conditions[exp_conditions != params$control], params$control)
 assertthat::assert_that(length(exp_conditions) == 2, msg = "Number of experimental conditions doesn't equal 2")
 
 meta_type <- meta_type %>%
@@ -195,7 +202,8 @@ mean_log2 <- tidy_data %>%
   ) %>%
   ungroup() %>%
   pivot_wider(names_from = condition, values_from = mean) %>%
-  mutate(ratio = .data[[exp_conditions[1]]] - .data[[exp_conditions[2]]])
+  mutate(ratio = .data[[levels(conditions)[2]]] - .data[[levels(conditions)[1]]])
+  #mutate(ratio = .data[[exp_conditions[1]]] - .data[[exp_conditions[2]]])
 
 # the p-values should match those in the summary table/individual lipids. It's easier doing the stats separately
 # here as we need some of the t-statistic values for the forest plot. Then afterwards, we filter for the lipids
