@@ -174,8 +174,6 @@ fc <- tidy_data %>%
          - .data[[paste0("log2_mean_", conditions[1])]]
   )
 
-.data[[levels(conditions)[2]]] - .data[[levels(conditions)[1]]]
-
 stats_pvals <- long_stats_pvals %>%
   select(class, lipid_name, test_type, p_val, adj_pval) %>%
   distinct() %>%
