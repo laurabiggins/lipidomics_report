@@ -6,7 +6,9 @@ output:
     keep_md: false
     self_contained: yes
 output_file: lip
-params: 
+params:
+ # metadata_file: D:/projects/lipidomics/example_data/Bebiana_July/metadata.txt
+  #input_file: D:/projects/lipidomics/example_data/Bebiana_July/alldata.lipidomics_summaryCorr.tsv
   metadata_file: ../data/metadata.txt
   input_file: ../data/alldata.lipidomics_summary_test_data.tsv
   #input_file: D:/projects/lipidomics/example_data/CSC/datasets/alldata.lipidomics_summary_MiaPaca2_Parental-CSC.csv
@@ -82,6 +84,7 @@ all_data <- dplyr::rename(
   all_data, lipid_name := tidyselect::all_of(params$lipid_name_col)
 )
 
+# all_data is used for heatmaps
 all_data <- all_data %>%
   replace(is.na(.), 0)
 
@@ -101,25 +104,19 @@ meta_type <- meta_type %>%
 
 tidy_data <- all_data %>%
   tidyr::pivot_longer(cols = -lipid_name, names_to = "sample_name") %>%
-  replace(is.na(.), 0) %>%
   tidyr::separate(lipid_name, sep = " ", into = c("class", NA), remove = FALSE) %>%
   left_join(meta_type) %>%
   dplyr::mutate(log2_value = log2(value)) %>%
   dplyr::mutate(log2_value = if_else(log2_value == "-Inf", 0, log2_value)) #%>% # we don't want -Inf values 
-  #mutate(condition = forcats::as_factor(condition)) %>%
-  #mutate(condition = forcats::fct_relevel(condition, params$control))
 
-
-exp_conditions <- unique(pull(tidy_data, condition))
-exp_conditions <- exp_conditions[1:2] # this script can only deal with 2 conditions
-#exp_conditions <- c(exp_conditions[exp_conditions != params$control], params$control)
-assertthat::assert_that(length(exp_conditions) == 2, msg = "Number of experimental conditions doesn't equal 2")
+exp_conditions <- levels(tidy_data$condition)
+assertthat::assert_that(length(exp_conditions) == 2, msg = "Number of experimental conditions doesn't equal 2, removing extra conditions")
 
 meta_type <- meta_type %>%
-  filter(condition %in% exp_conditions)
+  filter(condition %in% exp_conditions[1:2])
 
 tidy_data <- tidy_data %>%
-  filter(condition %in% exp_conditions)
+  filter(condition %in% exp_conditions[1:2])
 
 ```
 
@@ -128,25 +125,13 @@ tidy_data <- tidy_data %>%
 # run once
 dodge_width <- 0.8
 
-# totals, linear, median
-bar_data_totals <- tidy_data %>%
-  dplyr::group_by(class, condition) %>%
-  dplyr::summarise(median = median(value)) %>%
-  ungroup() %>%
-  group_by(class) %>%
-#  mutate(min_median = min(median)) %>%
-  mutate(max_median = max(median)) %>%
-  ungroup() %>%
-  left_join(tidy_data) %>%
-  select(class, value, median, condition, max_median) 
-
-# split into subclasses
+# median values per subclass, including abundance categories
 bar_data_linear_median <- tidy_data %>%
   dplyr::group_by(class, lipid_name, condition) %>%
   dplyr::summarise(median = median(value)) %>%
   ungroup() %>%
   group_by(lipid_name) %>%
-  mutate(min_median = min(median)) %>%
+ # mutate(min_median = min(median)) %>%
   mutate(max_median = max(median)) %>%
   ungroup() %>%
   mutate(abundance = if_else(max_median <= 1, "low", "high")) %>%
@@ -154,28 +139,42 @@ bar_data_linear_median <- tidy_data %>%
   select(class, lipid_name, value, median, condition, abundance) 
   
 ```
+```{r}
+abundance_data <- bar_data_linear_median %>%
+  select(lipid_name, abundance) %>%
+  distinct()
+```
 
 ```{r calculate_stats_individual_lipids}
-# for calculating the stats per individual lipid - functions are in stats.R 
+# for calculating the stats per individual lipid - functions are in stats.R
+# This is used to filter the main t_test_res object for the lipids that met the criteria
+# for 2 sample t-tests.
+#  
 long_stats_pvals <- do_stats(tidy_data, params$paired)
 
 # multiple testing correction - by class for now.
 long_stats_pvals <- long_stats_pvals %>%
   select(lipid_name, class, p_val) %>%
   distinct() %>%
-  drop_na() %>% # so we're not overcorrecting
+  drop_na() %>% # so we're not overcorrecting - this removes lipids that didn't meet test assumptions
   group_by(class) %>%
   mutate(adj_pval = p.adjust(p_val, method = "BH")) %>%
   ungroup() %>%
   right_join(long_stats_pvals)
+
+conditions <- levels(tidy_data$condition)
 
 fc <- tidy_data %>%
   dplyr::group_by(lipid_name, condition) %>%
   dplyr::summarise(log2_mean = mean(log2_value)) %>%
   ungroup() %>%
   pivot_wider(names_from = condition, names_prefix = "log2_mean_", values_from = log2_mean) %>%
-  mutate(log2_fc = .data[[paste0("log2_mean_", exp_conditions[1])]] - .data[[paste0("log2_mean_", exp_conditions[2])]])
+  mutate(log2_fc = 
+           .data[[paste0("log2_mean_", conditions[2])]] 
+         - .data[[paste0("log2_mean_", conditions[1])]]
+  )
 
+.data[[levels(conditions)[2]]] - .data[[levels(conditions)[1]]]
 
 stats_pvals <- long_stats_pvals %>%
   select(class, lipid_name, test_type, p_val, adj_pval) %>%
@@ -188,6 +187,7 @@ summary_table_data <- stats_pvals %>%
 cols_to_round <- summary_table_data %>%
   dplyr::select(all_of(c(contains("mean"), contains("FC")))) %>%
   colnames()
+
 pvals_to_round <- summary_table_data %>%
   dplyr::select(all_of(c(contains("pval")))) %>%
   colnames()
@@ -200,13 +200,16 @@ two_sample_t_test_lipids <- stats_pvals %>%
 ```
 
 
-```{r process_forest_data}
-# all the data is log transformed for the forest plots
-conditions <- unique(pull(tidy_data, condition))
+```{r t_test_individual_lipids}
+# #datasets for individual lipids
+# stats_pvals
+# t_test_res
+# mean_log2
+# 
+# # class dataset
+# bar_data_linear_median # this is used for abundance level in the class plots
 
-abundance_data <- bar_data_linear_median %>%
-  select(lipid_name, abundance) %>%
-  distinct()
+
 
 mean_log2 <- tidy_data %>%
   dplyr::group_by(lipid_name, condition) %>%
@@ -215,27 +218,28 @@ mean_log2 <- tidy_data %>%
   ) %>%
   ungroup() %>%
   pivot_wider(names_from = condition, values_from = mean) %>%
-  mutate(ratio = .data[[levels(conditions)[2]]] - .data[[levels(conditions)[1]]])
-  #mutate(ratio = .data[[exp_conditions[1]]] - .data[[exp_conditions[2]]])
+  mutate(ratio = .data[[exp_conditions[2]]] - .data[[exp_conditions[1]]])
 
 # the p-values should match those in the summary table/individual lipids. It's easier doing the stats separately
-# here as we need some of the t-statistic values for the forest plot. Then afterwards, we filter for the lipids
-# that met test assumptions. The multiple testing correction is probably a bit harsh though - we're currently
-# including the lipids with "none" tests. 
+# here as we need some of the t-statistic values for the forest plot. 
+# 
+# We use the output from the individual stats tests, and only keep those lipids that 
+# met assumptions for 2 sample t-tests.
 # 
 t_test_res <- tidy_data %>%
   group_by(class, lipid_name) %>%
   select(class, lipid_name, condition, log2_value) %>%
   rstatix::t_test(log2_value ~ condition, paired = params$paired) %>%
   ungroup() %>%
+  filter(lipid_name %in% two_sample_t_test_lipids) %>%
   group_by(class) %>%
   mutate(padj = p.adjust(p, method="BH")) %>%
   ungroup() %>%
   mutate(tadj = qt(padj/2, df)) %>%
   left_join(mean_log2) %>%
   mutate(SE = abs(ratio/tadj), lower.limit=ratio-1.96*SE, upper.limit=ratio+1.96*SE) %>%
-  left_join(abundance_data) %>%
-  filter(lipid_name %in% two_sample_t_test_lipids) 
+  left_join(abundance_data)# %>%
+ # filter(lipid_name %in% two_sample_t_test_lipids) 
 ```
 
 # {.tabset .tabset-pills}
@@ -258,7 +262,7 @@ The plots on the right show log2 ratios between the 2 conditions, the red point
 shows the ratio while the lines show the confidence interval. If the confidence 
 interval does not span over 0, the difference between the 2 conditions for that 
 particular species will be significant.  
-Subclasses that did not fit the assumptions for t_tests may not be shown in these plots.
+Subclasses that did not fit the assumptions for two-sample t_tests may not be shown in these plots.
   
 
 ```{r}
