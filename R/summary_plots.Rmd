@@ -1,27 +1,25 @@
 
 ```{r}
-#!! sort this out - we don't need 2 totals tables
-totals <- tidy_data %>%
-  group_by(class, condition) %>%
-  summarise(total = sum(value)) %>%
-  ungroup() %>%
-  mutate(log2_total = log2(total)) %>%
-  group_by(condition) %>%
-  mutate(percent = (total/sum(total))*100) %>%
-  ungroup() %>%
-  group_by(class) %>%
-  mutate(max_percent = max(percent)) %>%
-  ungroup() %>%
-  mutate(pie_class = if_else(max_percent > 1, class, "other"))
+dodge_width <- 0.9
 
-total_of_means <- tidy_data %>%
+# #datasets for individual lipids
+# stats_pvals
+# t_test_res
+# mean_log2
+# 
+# # class dataset
+# bar_data_linear_median # this is used for abundance level in the class plots
+
+# the mean here is the mean of the 3 (or no of replicates) total values, not the overall mean
+totals_data <- tidy_data %>%
   group_by(class, condition, sample_name) %>%
-  summarise(total = sum(value)) %>%
+  summarise(sample_total = sum(value)) %>%
   ungroup() %>%
   group_by(class, condition) %>%
   dplyr::summarise(
-    mean_total = mean(total),
-    se_total = sd(total)/sqrt(dplyr::n())
+    mean_total = mean(sample_total),
+    se_total = sd(sample_total)/sqrt(dplyr::n()),
+    sum_total = sum(sample_total)
   ) %>%
   ungroup() %>%
   group_by(condition) %>%
@@ -33,7 +31,8 @@ total_of_means <- tidy_data %>%
   ungroup() %>%
   mutate(pie_class = if_else(max_percent > 1, class, "other"))
 
-conditions <- unique(pull(tidy_data, condition))
+#conditions <- unique(pull(tidy_data, condition))
+conditions <- levels(tidy_data$condition)
 
 mean_log2_class <- tidy_data %>%
   dplyr::group_by(class, condition) %>%#, sample_name) %>%
@@ -42,13 +41,13 @@ mean_log2_class <- tidy_data %>%
   ) %>%
   ungroup() %>%
   pivot_wider(names_from = condition, values_from = mean) %>%
-  mutate(ratio = .data[[levels(conditions)[2]]] - .data[[levels(conditions)[1]]])
+  mutate(ratio = .data[[conditions[2]]] - .data[[conditions[1]]])
   #mutate(ratio = .data[[exp_conditions[1]]] - .data[[exp_conditions[2]]])
 ```
 
 ```{r}
 t_test_by_class <- tidy_data %>%
-  group_by(class) %>%#, condition, sample_name) %>%
+  group_by(class) %>%
   select(class, sample_name, condition, log2_value) %>%
   rstatix::t_test(log2_value ~ condition, paired = params$paired) %>%
   ungroup() %>%
@@ -70,7 +69,7 @@ The full set and values can be found in the table below.
 The plots and table show total summed values across all replicates.
 
 ```{r, pie_charts, out.width=c('50%', '50%'), fig.show='hold', fig.height = 7}
-pie_data <- totals %>%
+pie_data <- totals_data %>%
   select(pie_class, percent, condition) %>%
   group_by(pie_class, condition) %>%
   summarise(total_pie_percent = sum(percent)) %>%
@@ -95,12 +94,10 @@ purrr::walk(levels(pie_data$condition), plot_base_pie)
 
 ### Total amounts
 ```{r}
-totals_table <- totals %>%
-  select(class, condition, total) %>%
-  left_join(total_of_means) %>%
+totals_table <- totals_data %>%
   dplyr::arrange(desc(max_percent)) %>%
-  select(class, condition, total, mean_total, percent) %>%
-  tidyr::pivot_wider(names_from = condition, values_from = c(total, mean_total, percent))
+  select(class, condition, sum_total, mean_total, percent) %>%
+  tidyr::pivot_wider(names_from = condition, values_from = c(sum_total, mean_total, percent))
 
 totals_table %>%
   DT::datatable(
@@ -122,18 +119,30 @@ readr::write_csv(totals_table, file = out_file)
 <hr>
 <br><br>
 
-### Total amounts - linear scale
+### Linear values by class
 
-Bar shows median value per class.
+Bar shows median value per class. Each point is a value for an individual lipid in the class.
 
 T-tests were performed on log transformed data. Bars are annotated with a star if there was a significant difference between the conditions (adjusted p-value < 0.05). 
 
 ```{r barplot_totals_median, fig.width = 10, fig.height=8}
 pvals_by_class <- select(t_test_by_class, class, padj)
 
+bar_data_totals <- tidy_data %>%
+  dplyr::group_by(class, condition) %>%
+  dplyr::summarise(median = median(value)) %>%
+  ungroup() %>%
+  group_by(class) %>%
+  mutate(max_median = max(median)) %>%
+  ungroup() %>%
+  left_join(tidy_data) %>%
+  select(class, value, median, condition, max_median) 
+
 bar_data_totals <- bar_data_totals %>%
   left_join(superclasses) %>%
+  group_by(superclass) %>%
   mutate(max_super_value = max(max_median)) %>%
+  ungroup() %>%
   left_join(pvals_by_class) %>%
   mutate(bar_label = if_else(padj < 0.05, "*", "")) 
 
@@ -159,92 +168,68 @@ bar_data_totals %>%
     facet_wrap(~ superclass, scales = "free")
 
 ```
+<br>
 
-```{r, bar_totals_processing}
-pvals_by_class <- select(t_test_by_class, class, padj)
+### Linear values by class
   
-bar_total_data <- total_of_means %>%
+The boxplots show summary statistics for the lipid class (the median, two hinges and two whiskers), and all outlying points individually.
+Each data point for the class is overlaid.
+
+```{r, boxplot_linear, fig.width = 10, fig.height=8}
+boxplot_data <- tidy_data %>%
   left_join(superclasses) %>%
-  group_by(superclass) %>%
-  mutate(max_super_value = max(mean_total)) %>%
-  ungroup() %>%
-  select(superclass, class, condition, mean_total, se_total, max_mean_total, max_super_value) %>%
   left_join(pvals_by_class) %>%
-  mutate(bar_label = if_else(padj < 0.05, "*", ""))
-```
+  mutate(class_label = if_else(padj < 0.05, "*", "")) %>%
+  group_by(class) %>%
+  mutate(max_class_value = max(value)) %>%
+  mutate(max_class_log2_value = max(log2_value)) %>%
+  ungroup()
 
-```{r, bar_totals, fig.width = 10, fig.height=8, eval = FALSE}
-### Mean of total amounts - linear scale
-  
-#These bar plots may be misleading if the data is not normally distributed.
-
-#T-tests were performed on log transformed data. Bars are annotated with a star if there was a significant difference between the conditions (adjusted p-value < 0.05). 
-
-bar_total_data %>%
-  ggplot(aes(x = class, y = mean_total, fill = condition)) + 
-  geom_bar(
-    colour = "black", 
-    position= position_dodge(width = 0.8),
-    width = 0.8,
-    stat="identity",
-    lwd = 0.8
-  ) + 
-  geom_errorbar(
-      aes(ymin=mean_total-se_total, ymax=mean_total+se_total), 
-      position = position_dodge(width = dodge_width), 
-      width = 0.25,
-      lwd = 0.8
-    ) +
-  geom_text(aes(y = max_mean_total), 
-            nudge_y = bar_total_data$max_super_value*0.05, 
-            label = bar_total_data$bar_label,
-            size = 6) +
-  scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 90, face = "bold")) +
-  xlab("") +
-  facet_wrap(~ superclass, scales = "free")
-```
-
-<br>
-<hr>
-<br>
-
-```{r, boxplot_totals, fig.width = 10, fig.height=8, eval = FALSE}
-tidy_data %>%
-  left_join(superclasses) %>%
-    ggplot(aes(x = class, y = log2_value, fill = condition)) + 
-    geom_violin(
-      position= position_dodge(width = 0.9),
-      width = 0.8,
-      lwd = 0.8,
-      draw_quantiles = c(0.25, 0.5, 0.75)
-    ) +
-    scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
-    geom_point(position = position_dodge(width = 0.9), alpha = 0.8, shape = 21) +
-    #geom_boxplot(width=0.2, position = position_dodge(width = 0.9), alpha = 0.1) +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 90, face = "bold")) +
-    facet_wrap(~ superclass, scales = "free")
-```
-### Total amounts - log2 scale
-
-```{r, boxplot_totals, fig.width = 10, fig.height=8}
-tidy_data %>%
-  left_join(superclasses) %>%
-    ggplot(aes(x = class, y = log2_value, fill = condition)) + 
+boxplot_data %>%
+    ggplot(aes(x = class, y = value, fill = condition, label = class_label)) + 
     stat_boxplot(
       position= position_dodge(width = 0.9),
       width = 0.6,
       lwd = 0.8
     ) + 
+    geom_text(aes(y = max_class_value), 
+        size = 6,
+        col = "red") +
     geom_point(position = position_jitterdodge(dodge.width=0.9, jitter.width = 0.3), shape = 21) +
     scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 90, face = "bold")) +
     facet_wrap(~ superclass, scales = "free")
 ```
+<br>
 
+### Log2 transformed values  
+  
+The data has been log transformed as lipid data tends to be log-normal. 
+The boxplots show summary statistics for the lipid class (the median, two hinges and two whiskers), and all outlying points individually.
+Each data point for the class is overlaid.
+
+```{r, boxplot_totals, fig.width = 10, fig.height=8}
+boxplot_data %>%
+    ggplot(aes(x = class, y = log2_value, fill = condition, label = class_label)) + 
+    stat_boxplot(
+      position= position_dodge(width = 0.9),
+      width = 0.6,
+      lwd = 0.8
+    ) + 
+    geom_text(aes(y = max_class_log2_value), 
+        size = 6,
+        col = "red") +
+    geom_point(position = position_jitterdodge(dodge.width=0.9, jitter.width = 0.3), shape = 21) +
+    scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, face = "bold")) +
+    facet_wrap(~ superclass, scales = "free")
+```
+<br>
+
+These plots show log2 ratios between the 2 conditions, the red point shows the ratio while the lines show the confidence interval. If the confidence interval does not span 0, the difference between the 2 conditions for that particular species will be significant.
+Red points to the left of the line indicate higher average levels of the lipid class in the `r exp_conditions[1]` condition, while points to the right of the line indicate higher average levels in the `r exp_conditions[2]` condition.
 
 ```{r forest_class, fig.width = 10, fig.height=8}
 t_test_by_class %>%
@@ -264,6 +249,62 @@ large_text <- function(x, size = 16) {
   sprintf("<span style='font-size: %spx;'>%s</span>", size, x)
 }
 ```
+
+
+<br>
+<br>
+<hr class="style2">  
+<br>
+<br>  
+  
+###  Volcano plot
+
+<div class = "row">
+<div class = "col-md-4">
+<br><br>
+The y axis shows the –log10(padj); that is the negative of the log-transformed p-values, 
+adjusted for multiple comparisons.  
+The x axis shows the magnitude of difference between the conditions for that lipid, 
+expressed as a ratio.  
+Any points to the left of the grey dashed line have higher values in `r exp_conditions[1]` compared to `r exp_conditions[2]`, and vice versa for points to the right of the grey line.  
+
+Each point on the plot is a lipid subclass.   
+Hover over a point to see the name.
+
+The dashed red line shows significance (adj p<0.05) i.e. any points above it represent 
+a significant difference between the 2 conditions.
+
+
+</div>
+<div class = "col-md-8">
+```{r, volcano, fig.height=5, fig.width=6}
+p <- t_test_res %>%
+  left_join(superclasses) %>%
+  ggplot(aes(x = ratio, y = -log10(padj), col = superclass, annotation = lipid_name)) +
+  geom_point() +
+  geom_hline(yintercept = -log10(0.05), col = "red", linetype = "dashed") +
+  geom_vline(xintercept = 0, linetype = "dashed", col = "grey") +
+  theme(legend.title = element_blank())
+
+plotly::ggplotly(p, tooltip = "lipid_name")
+```
+</div>
+</div>
+
+<br>
+<br>
+<hr class="style2">  
+<br>
+<br>
+
+### Heatmaps
+
+These heatmaps are scaled by row, to allow comparison between samples.
+
+#### Lipids that change between conditions, with row clustering and column clustering  
+
+This heatmap shows lipids with an adjusted p value < 0.05 from t-tests.   
+Row labels are shown if there are < 70 rows. 
 
 ```{r, heatmap_processing}
 var_above0 <- all_data %>%
@@ -320,57 +361,7 @@ annot_colours <- list(
 )
 ```
 
-<br>
-<br>
-<hr class="style2">  
-<br>
-<br>  
-  
-###  Volcano plot
 
-<div class = "row">
-<div class = "col-md-4">
-<br><br>
-The y axis shows the –log10(padj); that is the negative of the log-transformed p-values, 
-adjusted for multiple comparisons.  
-The x axis shows the magnitude of difference between the conditions for that lipid, 
-expressed as a ratio.  
-Any points to the right of the grey dashed line have higher values in `r exp_conditions[1]` compared to `r exp_conditions[2]`, and vice versa for points left of the grey line.  
-
-Each point on the plot is a lipid subclass.   
-Hover over a point to see the name.
-
-The dashed red line shows significance (adj p<0.05) i.e. any points above it represent 
-a significant difference between the 2 conditions.
-
-
-</div>
-<div class = "col-md-8">
-```{r, volcano, fig.height=5, fig.width=6}
-p <- t_test_res %>%
-  left_join(superclasses) %>%
-  ggplot(aes(x = ratio, y = -log10(padj), col = superclass, annotation = lipid_name)) +
-  geom_point() +
-  geom_hline(yintercept = -log10(0.05), col = "red", linetype = "dashed") +
-  geom_vline(xintercept = 0, linetype = "dashed", col = "grey") +
-  theme(legend.title = element_blank())
-
-plotly::ggplotly(p, tooltip = "lipid_name")
-```
-</div>
-</div>
-
-<br>
-<br>
-<hr class="style2">  
-<br>
-<br>
-
-### Heatmaps
-
-#### Lipids that change between conditions, with row clustering and column clustering  
-  
-Row labels are shown if there are < 70 rows. 
 
 ```{r, heatmap1, fig.height = 8, fig.width = 10, results = "asis"}
 sig_lipids <- t_test_res %>%
