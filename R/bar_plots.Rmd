@@ -15,7 +15,8 @@ custom_barplot <- function(bar_data, lipid_class, abundance_level, y_label = "")
              width = 0.8,
              stat="identity",
              lwd = 0.8) + 
-    geom_point(position= position_dodge(width = dodge_width)) +
+    #geom_point(position= position_dodge(width = dodge_width)) +
+    geom_point(position = position_jitterdodge(dodge.width=dodge_width, jitter.width = 0.3), shape = 21, alpha = 0.5) +
     scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 90, face = "bold")) +

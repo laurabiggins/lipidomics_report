@@ -150,7 +150,7 @@ bar_data_totals %>%
             label = bar_data_totals$bar_label,
             size = 6,
             col = "red") +
-    geom_point(position = position_jitterdodge(dodge.width=0.9), shape = 21, alpha = 0.5) +
+    geom_point(position = position_jitterdodge(dodge.width=0.9, jitter.width = 0.3), shape = 21, alpha = 0.5) +
     scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 90, face = "bold")) +
@@ -238,7 +238,7 @@ tidy_data %>%
       width = 0.6,
       lwd = 0.8
     ) + 
-    geom_point(position = position_jitterdodge(dodge.width=0.9), shape = 21) +
+    geom_point(position = position_jitterdodge(dodge.width=0.9, jitter.width = 0.3), shape = 21) +
     scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 90, face = "bold")) +
