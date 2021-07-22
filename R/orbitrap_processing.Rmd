@@ -23,7 +23,6 @@ params:
   output_folder: out
   bar_class_ylabel: value
   control: Control
-  #control: Stem
 
 ---
 
@@ -75,7 +74,10 @@ assertthat::assert_that(
 
 assertthat::assert_that(
   all(colnames(all_data) %in% c(meta_info$sample_name, params$lipid_name_col)),
-  msg = paste0("Unexpected column name found in all_data file")
+  msg = paste0(
+    "Unexpected column name(s) found in all_data file: ", 
+    paste0(colnames(all_data)[!(colnames(all_data) %in% c(meta_info$sample_name, params$lipid_name_col))], collapse = ", ")
+  )
 )
 ```
 
@@ -139,6 +141,7 @@ bar_data_linear_median <- tidy_data %>%
   select(class, lipid_name, value, median, condition, abundance) 
   
 ```
+
 ```{r}
 abundance_data <- bar_data_linear_median %>%
   select(lipid_name, abundance) %>%
