@@ -68,12 +68,20 @@ The pie charts show the proportion of lipid types in the samples. Any that compr
 The full set and values can be found in the table below.  
 The plots and table show total summed values across all replicates.
 
-```{r, pie_charts, out.width=c('50%', '50%'), fig.show='hold', fig.height = 7}
+```{r, pie_processing}
 pie_data <- totals_data %>%
   select(pie_class, percent, condition) %>%
   group_by(pie_class, condition) %>%
   summarise(total_pie_percent = sum(percent)) %>%
   ungroup()
+
+other_pie_data <- totals_data %>%
+  filter(pie_class == "other") %>%
+  select(class, percent, condition) %>%
+  group_by(class, condition) %>%
+  summarise(total_pie_percent = sum(percent)) %>%
+  ungroup() %>%
+  rename(pie_class = class)
 
 plot_base_pie <- function(pie_condition){
   
@@ -88,16 +96,72 @@ plot_base_pie <- function(pie_condition){
   )
 }
 
-purrr::walk(levels(pie_data$condition), plot_base_pie)
-
+plot_base_pie <- function(pie_condition, pie_dataset){
+  
+  pie_condition_data <- pie_dataset %>%
+    filter(condition == pie_condition)
+  
+  pie(
+    pie_condition_data$total_pie_percent, 
+    labels = pie_condition_data$pie_class, 
+    col    = rainbow(nrow(pie_condition_data)),
+    main   = pie_condition
+  )
+}
 ```
 
+```{r, main_pie_charts, out.width=c('50%', '50%'), fig.show='hold', fig.height = 7}
+purrr::walk(levels(pie_data$condition), plot_base_pie, pie_data)
+```
+
+### Lipids in "other" category 
+```{r, main_pie_charts, out.width=c('50%', '50%'), fig.show='hold', fig.height = 7}
+purrr::walk(levels(other_pie_data$condition), plot_base_pie, other_pie_data)
+```
+
+
+
+```{r, out.width=c('50%', '50%'), fig.show='hold', fig.height = 8, eval = FALSE}
+other_pie <- totals_data %>%
+  filter(pie_class == "other") %>%
+  select(condition, class, mean_total)
+  
+other_pie_data <- other_pie  %>%  
+  group_by(condition) %>%
+  summarise(total = sum(mean_total)) %>%
+  ungroup() %>%
+  left_join(other_pie) %>%
+  mutate(percent = (mean_total/total)*100) %>%
+  group_by(class) %>%
+  mutate(max_percent = max(percent)) %>%
+  ungroup()
+
+other_pie_data <- other_pie_data %>%
+  select(class, percent, condition) %>%
+  group_by(class, condition) %>%
+  summarise(total_pie_percent = sum(percent)) %>%
+  ungroup()
+
+n_col <- n_distinct(select(other_pie_data, class))
+
+for (this_condition in unique(other_pie_data$condition)){
+  #print(this_condition)
+  one_pie <- filter(other_pie_data, condition == this_condition)
+  pie(
+    one_pie$total_pie_percent, 
+    labels = one_pie$class, 
+    col = rainbow(n_col),
+    main = this_condition
+  )
+}  
+
+```
 ### Total amounts
 ```{r}
 totals_table <- totals_data %>%
   dplyr::arrange(desc(max_percent)) %>%
-  select(class, condition, sum_total, mean_total, percent) %>%
-  tidyr::pivot_wider(names_from = condition, values_from = c(sum_total, mean_total, percent))
+  select(class, condition, sum_total, percent) %>%
+  tidyr::pivot_wider(names_from = condition, values_from = c(sum_total, percent))
 
 totals_table %>%
   DT::datatable(
