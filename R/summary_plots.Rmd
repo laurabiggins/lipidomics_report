@@ -310,13 +310,18 @@ plotly::ggplotly(p, tooltip = "lipid_name")
 
 ### Heatmaps
 
-These heatmaps are scaled by row, to allow comparison between samples.
+These heatmaps are scaled by row, to allow comparison between samples.  
+<br>
 <br>
 
 #### Lipids that change between conditions
 
 This heatmap shows lipids with an adjusted p value < 0.05 from t-tests. 
-Row labels are shown if there are < 70 rows.   
+Row labels are shown if there are < 70 rows. 
+
+<p style="font-size: 11px;";>
+Rows and columns have been clustered using default clustering methods in the pheatmap R package.
+</p>
 
 ```{r, heatmap_processing}
 var_above0 <- all_data %>%
@@ -330,9 +335,6 @@ var_above0 <- all_data %>%
 heatmap_data <- tibble::column_to_rownames(var_above0, "lipid_name")
 ```  
 
-<p style="font-size: 10px;";>
-Rows and columns have been clustered using default clustering methods in the pheatmap R package.
-</p>
 
 ```{r, heatmap_processing2}
 # rearrange matrix so control samples come first
