@@ -1,4 +1,5 @@
-# This is the script called by lipidomics_report_wrapper.R
+# This is the script called by lipidomics_report_wrapper.R.
+# It checks the validity of arguments in the config file.
 
 # required packages that aren't all explicitly loaded
 packages_required <- c("tidyverse", "ggplot2", "tools", "assertthat", "rstatix",
