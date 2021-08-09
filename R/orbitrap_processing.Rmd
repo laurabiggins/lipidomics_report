@@ -26,9 +26,14 @@ params:
 
 ---
 
-<p style="font-size: 11px";>
-This report aims to present lipid data in relation to the different conditions with which they are associated. It is not a definitive analysis of the data but rather an introduction to it.  
-Lipid data tends to be log-normal so, prior to statistical analyses, the data were log transformed to meet the assumptions of the tests. However, such transformation may not be suitable for all classes/species so the p-values should always be interpreted after careful graphical exploration of the data.
+<p style="font-size: 11px; font-weight: bold";>
+This report is primarily for explorative purposes and should not be used to draw any definitive conclusions about the data. Such conclusions should be drawn from rigorous statistical analyses in collaboration, if needed, with a biostatistician.  
+</p>
+<p style="font-size: 11px;";>
+Statistical tests have been performed to help identify potentially interesting changes in the data. It should be noted that these tests are automated and assumptions have been made that may not be strictly correct depending on the behaviour of the data. For example, lipid data tend to be log-normal so, prior to statistical analyses, the data were log transformed to meet the assumptions of parametric tests. However, such transformation may not be suitable for all classes/species.  
+</p>
+<p style="font-size: 11px; font-weight: bold";>
+In no case, should the statistical results from the report be used in publications without further checks on the data.  
 </p>
 
 ```{r setup, include=FALSE}
