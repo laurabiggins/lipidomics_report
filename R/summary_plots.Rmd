@@ -311,11 +311,12 @@ plotly::ggplotly(p, tooltip = "lipid_name")
 ### Heatmaps
 
 These heatmaps are scaled by row, to allow comparison between samples.
+<br>
 
-#### Lipids that change between conditions, with row clustering and column clustering  
+#### Lipids that change between conditions
 
 This heatmap shows lipids with an adjusted p value < 0.05 from t-tests.   
-Row labels are shown if there are < 70 rows. 
+Row labels are shown if there are < 70 rows.   
 
 ```{r, heatmap_processing}
 var_above0 <- all_data %>%
@@ -328,6 +329,9 @@ var_above0 <- all_data %>%
 
 heatmap_data <- tibble::column_to_rownames(var_above0, "lipid_name")
 ```  
+<p style="font-size: 10px;";>
+Rows and columns have been clustered using default clustering methods in the pheatmap R package.
+<p>
 
 ```{r, heatmap_processing2}
 # rearrange matrix so control samples come first
@@ -373,7 +377,6 @@ annot_colours <- list(
 ```
 
 
-
 ```{r, heatmap1, fig.height = 8, fig.width = 10, results = "asis"}
 sig_lipids <- t_test_res %>%
   filter(padj < 0.05) %>%
@@ -398,9 +401,10 @@ if(length(sig_lipids) >= 2){
 } else cat("Not enough significant lipids to plot a heatmap")
 ```
 
+<br><br>
 
-
-#### All lipids, rows ordered by lipid subclass, columns ordered by condition, no clustering
+#### All lipids  
+Rows ordered by lipid subclass, columns ordered by condition, no clustering
 
 ```{r, heatmap1, fig.height = 8, fig.width = 10}
 heatmap1 <- pheatmap::pheatmap(
@@ -418,47 +422,3 @@ heatmap1 <- pheatmap::pheatmap(
 
 heatmap1
 ```
-
-<br>
-<br>
-
-#### All lipids, rows ordered by lipid subclass, clustered by columns
-
-```{r, heatmap2, fig.height = 8, fig.width = 10}
-heatmap2 <- pheatmap::pheatmap(
-  heatmap_data,
-  scale = "row",
-  annotation_row = row_annotation,
-  annotation_col = col_annotation,
-  cluster_rows = FALSE,
-  labels_row = lipid_labels,
-  fontsize_row = 8,
-  annotation_colors = annot_colours#,
-  #annotation_legend = FALSE
-)
-
-heatmap2
-
-```
-
-<br>
-<br>
-
-#### All lipids, with row clustering and column clustering
-
-```{r, heatmap3, fig.height = 8, fig.width = 10}
-too_many_names <- if_else(nrow(heatmap_data) > 70, FALSE, TRUE)
-
-heatmap3 <- pheatmap::pheatmap(
-  heatmap_data,
-  scale = "row",
-  annotation_row = row_annotation,
-  annotation_col = col_annotation,
-  annotation_colors = annot_colours, 
-  show_rownames = too_many_names
-)
-
-heatmap3
-
-```
-
