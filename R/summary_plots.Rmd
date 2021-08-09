@@ -315,7 +315,7 @@ These heatmaps are scaled by row, to allow comparison between samples.
 
 #### Lipids that change between conditions
 
-This heatmap shows lipids with an adjusted p value < 0.05 from t-tests.   
+This heatmap shows lipids with an adjusted p value < 0.05 from t-tests. 
 Row labels are shown if there are < 70 rows.   
 
 ```{r, heatmap_processing}
@@ -329,9 +329,10 @@ var_above0 <- all_data %>%
 
 heatmap_data <- tibble::column_to_rownames(var_above0, "lipid_name")
 ```  
+
 <p style="font-size: 10px;";>
 Rows and columns have been clustered using default clustering methods in the pheatmap R package.
-<p>
+</p>
 
 ```{r, heatmap_processing2}
 # rearrange matrix so control samples come first
