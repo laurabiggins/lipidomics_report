@@ -170,7 +170,7 @@ totals_table %>%
      # filter = list(position = "top"),
       escape = FALSE
       ) %>%
-    DT::formatRound(digits = 2, 2:7) 
+    DT::formatRound(digits = 2, 2:5) 
 ```
 
 ```{r}
@@ -178,66 +178,17 @@ out_file <- paste0(params$output_folder, "/totals_table.csv")
 readr::write_csv(totals_table, file = out_file) 
 ```
 
-
-<br><br>
+<br>
 <hr>
-<br><br>
-
-### Linear values by class
-
-Bar shows median value per class. Each point is a value for an individual lipid in the class.
-
-T-tests were performed on log transformed data. Bars are annotated with a star if there was a significant difference between the conditions (adjusted p-value < 0.05). 
-
-```{r barplot_totals_median, fig.width = 10, fig.height=8}
-pvals_by_class <- select(t_test_by_class, class, padj)
-
-bar_data_totals <- tidy_data %>%
-  dplyr::group_by(class, condition) %>%
-  dplyr::summarise(median = median(value)) %>%
-  ungroup() %>%
-  group_by(class) %>%
-  mutate(max_median = max(median)) %>%
-  ungroup() %>%
-  left_join(tidy_data) %>%
-  select(class, value, median, condition, max_median) 
-
-bar_data_totals <- bar_data_totals %>%
-  left_join(superclasses) %>%
-  group_by(superclass) %>%
-  mutate(max_super_value = max(max_median)) %>%
-  ungroup() %>%
-  left_join(pvals_by_class) %>%
-  mutate(bar_label = if_else(padj < 0.05, "*", "")) 
-
-bar_data_totals %>%  
-    ggplot(aes(x = class, y = value, fill = condition)) +
-    geom_bar(aes(y = median), 
-           colour = "black", 
-           position= position_dodge(width = dodge_width),
-           width = 0.8,
-           stat="identity",
-           lwd = 0.8) + 
-    geom_text(aes(y = max_median), 
-            nudge_y = bar_data_totals$max_super_value*0.05, 
-            label = bar_data_totals$bar_label,
-            size = 6,
-            col = "red") +
-    geom_point(position = position_jitterdodge(dodge.width=0.9, jitter.width = 0.3), shape = 21, alpha = 0.5) +
-    scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 90, face = "bold")) +
-    xlab("") +
-    ylab(params$bar_class_ylabel) +
-    facet_wrap(~ superclass, scales = "free")
-
-```
 <br>
 
 ### Linear values by class
   
-The boxplots show summary statistics for the lipid class (the median, two hinges and two whiskers), and all outlying points individually.
-Each data point for the class is overlaid.
+The box-and-whisker plots show 5 point summary statistics for the lipid class: the median, upper and lower quartile (box) and min/max values (whiskers). Points beyond whisker limits are outliers and are plotted individually in black. 
+
+Each data point for the class is overlaid in the corresponding colour.
+
+T-tests were performed on log2 transformed data. Classes are annotated with a star if there was a significant difference between the conditions (adjusted p-value < 0.05). 
 
 ```{r, boxplot_linear, fig.width = 10, fig.height=8}
 boxplot_data <- tidy_data %>%
@@ -268,10 +219,8 @@ boxplot_data %>%
 <br>
 
 ### Log2 transformed values  
-  
-The data has been log transformed as lipid data tends to be log-normal. 
-The boxplots show summary statistics for the lipid class (the median, two hinges and two whiskers), and all outlying points individually.
-Each data point for the class is overlaid.
+
+These plots share the same features as those above, but show the log2 transformed data.
 
 ```{r, boxplot_totals, fig.width = 10, fig.height=8}
 boxplot_data %>%
@@ -291,8 +240,9 @@ boxplot_data %>%
     facet_wrap(~ superclass, scales = "free")
 ```
 <br>
+<br>
 
-These plots show log2 ratios between the 2 conditions, the red point shows the ratio while the lines show the confidence interval. If the confidence interval does not span 0, the difference between the 2 conditions for that particular species will be significant.
+The plots below show log2 ratios between the 2 conditions, the red point shows the ratio while the lines show the confidence interval. If the confidence interval does not span 0, the difference between the 2 conditions for that particular species will be significant.
 Red points to the left of the line indicate higher average levels of the lipid class in the `r exp_conditions[1]` condition, while points to the right of the line indicate higher average levels in the `r exp_conditions[2]` condition.
 
 ```{r forest_class, fig.width = 10, fig.height=8}
@@ -314,12 +264,9 @@ large_text <- function(x, size = 16) {
 }
 ```
 
-
-<br>
 <br>
 <hr class="style2">  
 <br>
-<br>  
   
 ###  Volcano plot
 
