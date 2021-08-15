@@ -3,35 +3,27 @@
 <br>
 
 ```{r barplot_function}
-custom_barplot <- function(bar_data, lipid_class, abundance_level, y_label = ""){
-
-  bar_data %>%
+custom_boxplot <- function(box_data, lipid_class, y_label = ""){
+  box_data %>%
     filter(class == lipid_class) %>%
-    filter(abundance == abundance_level) %>%
-    ggplot(aes(x = lipid_name, y = value, fill = condition)) +
-    geom_bar(aes(y = median), 
-             colour = "black", 
-             position= position_dodge(width = dodge_width),
-             width = 0.8,
-             stat="identity",
-             lwd = 0.8) + 
-    #geom_point(position= position_dodge(width = dodge_width)) +
-    geom_point(position = position_jitterdodge(dodge.width=dodge_width, jitter.width = 0.3), shape = 21, alpha = 1) +
+    ggplot(aes(x = lipid_name, y = log2_value, fill = condition)) + 
+    stat_boxplot(
+      position= position_dodge(width = 0.9),
+      width = 0.6,
+      lwd = 0.8,
+      outlier.shape = NA
+    ) + 
+    geom_point(position = position_jitterdodge(dodge.width=0.9, jitter.width = 0.3), shape = 21) +
     scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
     theme_minimal() +
-    theme(axis.text.x = element_text(angle = 90, face = "bold")) +
-    xlab("") +
-    ylab(y_label)
-}
+    theme(axis.text.x = element_text(angle = 90, face = "bold"))
+}  
 ```
 
 ```{r forest_function}
-
-custom_forest <- function(plot_data, lipid_class, abundance_level){
-
+custom_forest <- function(plot_data, lipid_class){
   plot_data %>%
     filter(class == lipid_class) %>%
-    filter(abundance == abundance_level) %>%
     ggplot(aes(ratio, lipid_name)) +
     geom_errorbar(aes(xmin=lower.limit, xmax=upper.limit), width = 0.5, lwd=0.8, show.legend=FALSE)+
     geom_point(size=3, colour="darkred")+
@@ -40,52 +32,13 @@ custom_forest <- function(plot_data, lipid_class, abundance_level){
 }  
 ```
 
-
-```{r abundance_counts}
-abundance_counts <- bar_data_linear_median %>%
-  filter(class == lipid_class) %>%
-  count(abundance) %>%
-  pull(n, name = abundance)
-any_high <- "high" %in% names(abundance_counts) 
-any_low <- "low" %in% names(abundance_counts)
-```
-
-#### High abundance
-
 ```{r}
 fig_out <- paste0(figure_output, "/", lipid_class, "-")
 ```
 
-```{r, high_bar_forest, out.width=c('50%', '50%'), fig.show='hold', fig.height = 6, eval = any_high, fig.path=fig_out}
-custom_barplot(bar_data_linear_median, lipid_class, abundance_level = "high", y_label = params$bar_class_ylabel)
-custom_forest(t_test_res, lipid_class, abundance_level = "high")
-```
-
-```{r, eval = !any_high, results="asis"}
-cat("All median values for this class <= 1 so will be in the low abundance set")
+```{r, box_forest, out.width=c('50%', '50%'), fig.show='hold', fig.height = 6, fig.path=fig_out}
+custom_boxplot(tidy_data, lipid_class, y_label = params$bar_class_ylabel)
+custom_forest(t_test_res, lipid_class)#, abundance_level = "high")
 ```
 
 <br>  
-
-#### Low abundance
-
-```{r, low_bar_forest, out.width=c('50%', '50%'), fig.show='hold', fig.height = 6, eval = any_low, fig.path=fig_out}
-custom_barplot(bar_data_linear_median, lipid_class, abundance_level = "low", y_label = params$bar_class_ylabel)
-custom_forest(t_test_res, lipid_class, abundance_level = "low")
-```
-
-```{r, eval = !any_low, results="asis"}
-cat("All median values for this class > 1 so will be in the high abundance set")
-```
-
-<br> 
-    
-```{r, eval = FALSE}
-# this looks a bit rubbish as there's not much data in it
-t_test_res %>%
-  ggplot(aes(x = ratio, y = -log10(padj)))+
-  geom_point()
-```
-
-<br>
-
