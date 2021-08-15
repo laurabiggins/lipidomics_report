@@ -336,6 +336,29 @@ cat(unlist(res), sep = '\n')
   
 ## 4. Experimental info
 
+```{r}
+design_phrase <- if_else(params$paired, "a matched design", "an independent design")
+```
+
+### Experimental design
+
+This report has been generated on the assumption that the type of experiment carried out was
+**`r design_phrase`**.    
+   
+We have considered 2 types of experimental designs which we called independent and matched respectively. They are defined as follows: 
+
+**Independent design:** 2 or more conditions (e.g. genotype, treatment …) and in each several independent biological replicates (e.g. mouse, human …). 
+
+**Matched design:** aka repeated, dependent or paired. For this type of design we have considered 2 possibilities. 
+
+- Design1: Two or more measures per animal/subject/petri dish (e.g. before/after treatment measures). 
+
+- Design 2: Two or more independent experiments and within each experiment: same conditions (e.g. in each experiment 1 WT and 1 KO mice, the 2 animals are considered matched). 
+
+<br>
+
+### Metadata supplied for the experiment
+
 <div class = "row">
 <div class = "col-md-6">
 ```{r}
