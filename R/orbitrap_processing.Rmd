@@ -23,7 +23,6 @@ params:
   output_folder: out
   bar_class_ylabel: value
   control: Control
-
 ---
 
 <p style="font-size: 11px; font-weight: bold";>
@@ -130,28 +129,10 @@ tidy_data <- tidy_data %>%
 ```{r process_bar_data}
 # this needs to be done here, not in the bar_plot Rmd file, so that it is only 
 # run once
-dodge_width <- 0.8
-
-# median values per subclass, including abundance categories
-bar_data_linear_median <- tidy_data %>%
-  dplyr::group_by(class, lipid_name, condition) %>%
-  dplyr::summarise(median = median(value)) %>%
-  ungroup() %>%
-  group_by(lipid_name) %>%
- # mutate(min_median = min(median)) %>%
-  mutate(max_median = max(median)) %>%
-  ungroup() %>%
-  mutate(abundance = if_else(max_median <= 1, "low", "high")) %>%
-  left_join(tidy_data) %>%
-  select(class, lipid_name, value, median, condition, abundance) 
+#dodge_width <- 0.8
   
 ```
 
-```{r}
-abundance_data <- bar_data_linear_median %>%
-  select(lipid_name, abundance) %>%
-  distinct()
-```
 
 ```{r calculate_stats_individual_lipids}
 # for calculating the stats per individual lipid - functions are in stats.R
@@ -211,11 +192,6 @@ two_sample_t_test_lipids <- stats_pvals %>%
 # stats_pvals
 # t_test_res
 # mean_log2
-# 
-# # class dataset
-# bar_data_linear_median # this is used for abundance level in the class plots
-
-
 
 mean_log2 <- tidy_data %>%
   dplyr::group_by(lipid_name, condition) %>%
@@ -226,8 +202,9 @@ mean_log2 <- tidy_data %>%
   pivot_wider(names_from = condition, values_from = mean) %>%
   mutate(ratio = .data[[exp_conditions[2]]] - .data[[exp_conditions[1]]])
 
-# the p-values should match those in the summary table/individual lipids. It's easier doing the stats separately
-# here as we need some of the t-statistic values for the forest plot. 
+# the p-values should match those in the summary table/individual lipids. 
+# It's easier doing the stats separately here as we need some of the t-statistic 
+# values for the forest plot. 
 # 
 # We use the output from the individual stats tests, and only keep those lipids that 
 # met assumptions for 2 sample t-tests.
@@ -243,9 +220,7 @@ t_test_res <- tidy_data %>%
   ungroup() %>%
   mutate(tadj = qt(padj/2, df)) %>%
   left_join(mean_log2) %>%
-  mutate(SE = abs(ratio/tadj), lower.limit=ratio-1.96*SE, upper.limit=ratio+1.96*SE) %>%
-  left_join(abundance_data)# %>%
- # filter(lipid_name %in% two_sample_t_test_lipids) 
+  mutate(SE = abs(ratio/tadj), lower.limit=ratio-1.96*SE, upper.limit=ratio+1.96*SE)
 ```
 
 # {.tabset .tabset-pills}
@@ -258,17 +233,17 @@ t_test_res <- tidy_data %>%
 
 ## 2. Class plots
 
-### Bar plot information
-The bar plots show linear median values for each condition within each lipid subclass. They are split between low and high abundance values, where low abundance refers to lipid subclasses with a median 
-value <= 1 in either condition.
-The points show each individual value.
+### Box plot information
+The box-and-whisker plots show 5 point summary statistics for the lipid subclasses: the median, upper and lower quartile (box) and min/max values (whiskers). Points beyond whisker limits are outliers. 
+
+Each data point for the class is overlaid in the corresponding colour.
    
 ### Forest plot information    
 The plots on the right show log2 ratios between the 2 conditions, the red point 
 shows the ratio while the lines show the confidence interval. If the confidence 
 interval does not span over 0, the difference between the 2 conditions for that 
-particular species will be significant.  
-Subclasses that did not fit the assumptions for two-sample t_tests may not be shown in these plots.
+particular species is likely to be significant.  
+Subclasses that did not fit the assumptions for two-sample t-tests may not be shown in these plots.
   
 
 ```{r}
@@ -349,7 +324,7 @@ We have considered 2 types of experimental designs which we called independent a
 
 **Independent design:** 2 or more conditions (e.g. genotype, treatment …) and in each several independent biological replicates (e.g. mouse, human …). 
 
-**Matched design:** aka repeated, dependent or paired. For this type of design we have considered 2 possibilities. 
+**Matched design:** aka repeated, dependent or paired. For this type of design we have considered 2 possibilities: 
 
 - Design1: Two or more measures per animal/subject/petri dish (e.g. before/after treatment measures). 
 
