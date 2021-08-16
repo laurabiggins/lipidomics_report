@@ -6,9 +6,6 @@ dodge_width <- 0.9
 # stats_pvals
 # t_test_res
 # mean_log2
-# 
-# # class dataset
-# bar_data_linear_median # this is used for abundance level in the class plots
 
 # the mean here is the mean of the 3 (or no of replicates) total values, not the overall mean
 totals_data <- tidy_data %>%
@@ -31,21 +28,22 @@ totals_data <- tidy_data %>%
   ungroup() %>%
   mutate(pie_class = if_else(max_percent > 1, class, "other"))
 
-#conditions <- unique(pull(tidy_data, condition))
 conditions <- levels(tidy_data$condition)
 
+```
+
+```{r}
+save(tidy_data, file = "tidy_data.rds")
+
 mean_log2_class <- tidy_data %>%
-  dplyr::group_by(class, condition) %>%#, sample_name) %>%
+  dplyr::group_by(class, condition) %>%
   dplyr::summarise(
     mean = mean(log2_value),
   ) %>%
   ungroup() %>%
   pivot_wider(names_from = condition, values_from = mean) %>%
   mutate(ratio = .data[[conditions[2]]] - .data[[conditions[1]]])
-  #mutate(ratio = .data[[exp_conditions[1]]] - .data[[exp_conditions[2]]])
-```
 
-```{r}
 t_test_by_class <- tidy_data %>%
   group_by(class) %>%
   select(class, sample_name, condition, log2_value) %>%
@@ -128,11 +126,13 @@ plot_base_pie <- function(pie_condition, pie_dataset){
 purrr::walk(levels(pie_data$condition), plot_base_pie, pie_data)
 ```
 
-### Lipids in "other" category 
+### Lipids in "other" category   
+
+This is a breakdown of the categories that comprise the "other" category in the charts above.      
+
 ```{r, main_pie_charts, out.width=c('50%', '50%'), fig.show='hold', fig.height = 7}
 purrr::walk(levels(other_pie_data$condition), plot_base_pie, other_pie_data)
 ```
-
 
 
 ```{r, out.width=c('50%', '50%'), fig.show='hold', fig.height = 8, eval = FALSE}
@@ -170,6 +170,7 @@ for (this_condition in unique(other_pie_data$condition)){
 }  
 
 ```
+
 ### Total amounts
 ```{r}
 totals_table <- totals_data %>%
@@ -223,9 +224,6 @@ boxplot_data %>%
       lwd = 0.8,
       outlier.shape = NA
     ) + 
-#    geom_text(aes(y = max_class_value), 
-#        size = 6,
-#        col = "red") +
     geom_point(position = position_jitterdodge(dodge.width=0.9, jitter.width = 0.3), shape = 21) +
     scale_fill_manual(values = c("#9ac4d6", "#f7f7c3")) +
     theme_minimal() +
@@ -264,7 +262,7 @@ boxplot_data %>%
 ### Forest plots for Log2 ratios 
 #### `r exp_conditions[2]` / `r exp_conditions[1]`
 
-The red point shows the ratio while the lines show the confidence interval. If the confidence interval does not span 0, the difference between the 2 conditions will be significant.
+The red point shows the ratio while the lines show the confidence interval. If the confidence interval does not span 0, the difference between the 2 conditions is likely to be significant.
 Red points to the left of the line indicate higher average levels of the lipid class in the `r exp_conditions[1]` condition, while points to the right of the line indicate higher average levels in the `r exp_conditions[2]` condition.
 
 ```{r forest_class, fig.width = 10, fig.height=8}
@@ -273,7 +271,7 @@ t_test_by_class %>%
   ggplot(aes(ratio, class)) +
     geom_errorbar(aes(xmin=lower.limit, xmax=upper.limit), width = 0.5, lwd=0.8, show.legend=FALSE)+
     geom_point(size=3, colour="darkred")+
-    geom_vline(xintercept=0, linetype="dashed", color = "red")+
+    geom_vline(xintercept=0, linetype="dashed", color = "red") +
     scale_x_continuous(breaks=seq(from =-15, by=1, to=5)) +
     facet_wrap(~ superclass, scales = "free")
 ```
@@ -408,8 +406,6 @@ sig_lipids <- t_test_res %>%
   pull(lipid_name)
 
 if(length(sig_lipids) >= 2){
-  
-  #heatmap_sig <- heatmap_data[sig_lipids,]
   
   heatmap_sig <- log2(heatmap_data[sig_lipids,])
   heatmap_sig[heatmap_sig == "-Inf"] <- 0
