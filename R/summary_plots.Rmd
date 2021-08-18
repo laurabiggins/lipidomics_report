@@ -32,31 +32,6 @@ conditions <- levels(tidy_data$condition)
 
 ```
 
-```{r}
-save(tidy_data, file = "tidy_data.rds")
-
-mean_log2_class <- tidy_data %>%
-  dplyr::group_by(class, condition) %>%
-  dplyr::summarise(
-    mean = mean(log2_value),
-  ) %>%
-  ungroup() %>%
-  pivot_wider(names_from = condition, values_from = mean) %>%
-  mutate(ratio = .data[[conditions[2]]] - .data[[conditions[1]]])
-
-t_test_by_class <- tidy_data %>%
-  group_by(class) %>%
-  select(class, sample_name, condition, log2_value) %>%
-  rstatix::t_test(log2_value ~ condition, paired = params$paired) %>%
-  ungroup() %>%
-  mutate(padj = p.adjust(p, method="BH")) %>%
-  ungroup() %>%
-  mutate(tadj = qt(padj/2, df)) %>%
-  left_join(mean_log2_class) %>%
-  mutate(SE = abs(ratio/tadj), lower.limit=ratio-1.96*SE, upper.limit=ratio+1.96*SE) 
-
-```
-
 <hr class="style2">  
 
 ### Summary plots   
