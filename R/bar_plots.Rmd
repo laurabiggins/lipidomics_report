@@ -2,7 +2,12 @@
   
 <br>
 
-```{r barplot_function}
+```{r, eval = FALSE}
+# to test this
+#lipid_class <- "PC" 
+```
+
+```{r boxplot_function}
 custom_boxplot <- function(box_data, lipid_class, y_label = ""){
   box_data %>%
     filter(class == lipid_class) %>%
@@ -22,13 +27,18 @@ custom_boxplot <- function(box_data, lipid_class, y_label = ""){
 
 ```{r forest_function}
 custom_forest <- function(plot_data, lipid_class){
+  plot_data <- plot_data %>%
+    filter(class == lipid_class) %>%
+    mutate(lipid_name = forcats::as_factor(lipid_name))
+  
   plot_data %>%
     filter(class == lipid_class) %>%
     ggplot(aes(ratio, lipid_name)) +
     geom_errorbar(aes(xmin=lower.limit, xmax=upper.limit), width = 0.5, lwd=0.8, show.legend=FALSE)+
     geom_point(size=3, colour="darkred")+
     geom_vline(xintercept=0, linetype="dashed", color = "red")+
-    scale_x_continuous(breaks=seq(from =-15, by=1, to=5))
+    scale_x_continuous(breaks=seq(from =-15, by=1, to=5)) +
+    scale_y_discrete(limits = rev(levels(plot_data$lipid_name)))
 }  
 ```
 
