@@ -141,14 +141,12 @@ tidy_data <- tidy_data %>%
 #  
 long_stats_pvals <- do_stats(tidy_data, params$paired)
 
-# multiple testing correction - by class for now.
+# multiple testing correction
 long_stats_pvals <- long_stats_pvals %>%
   select(lipid_name, class, p_val) %>%
   distinct() %>%
   drop_na() %>% # so we're not overcorrecting - this removes lipids that didn't meet test assumptions
-  group_by(class) %>%
   mutate(adj_pval = p.adjust(p_val, method = "BH")) %>%
-  ungroup() %>%
   right_join(long_stats_pvals)
 
 conditions <- levels(tidy_data$condition)
@@ -186,7 +184,6 @@ two_sample_t_test_lipids <- stats_pvals %>%
   pull()
 ```
 
-
 ```{r t_test_individual_lipids}
 # #datasets for individual lipids
 # stats_pvals
@@ -196,31 +193,52 @@ two_sample_t_test_lipids <- stats_pvals %>%
 mean_log2 <- tidy_data %>%
   dplyr::group_by(lipid_name, condition) %>%
   dplyr::summarise(
-    mean = mean(log2_value), 
+    mean = mean(log2_value) 
   ) %>%
   ungroup() %>%
   pivot_wider(names_from = condition, values_from = mean) %>%
   mutate(ratio = .data[[exp_conditions[2]]] - .data[[exp_conditions[1]]])
 
+# We use the output from the individual stats tests, and only keep those lipids that 
+# met assumptions for 2 sample t-tests.
+
 # the p-values should match those in the summary table/individual lipids. 
 # It's easier doing the stats separately here as we need some of the t-statistic 
 # values for the forest plot. 
-# 
-# We use the output from the individual stats tests, and only keep those lipids that 
-# met assumptions for 2 sample t-tests.
-# 
+
 t_test_res <- tidy_data %>%
   group_by(class, lipid_name) %>%
   select(class, lipid_name, condition, log2_value) %>%
   rstatix::t_test(log2_value ~ condition, paired = params$paired) %>%
   ungroup() %>%
   filter(lipid_name %in% two_sample_t_test_lipids) %>%
-  group_by(class) %>%
   mutate(padj = p.adjust(p, method="BH")) %>%
-  ungroup() %>%
-  mutate(tadj = qt(padj/2, df)) %>%
+  mutate(z = -0.862 + sqrt(0.743 - 2.404*log(padj))) %>%
   left_join(mean_log2) %>%
-  mutate(SE = abs(ratio/tadj), lower.limit=ratio-1.96*SE, upper.limit=ratio+1.96*SE)
+  mutate(SE = ratio/z, lower.limit=ratio - 1.96*SE, upper.limit=ratio + 1.96*SE)
+
+```
+
+```{r t_test_class}
+mean_log2_class <- tidy_data %>%
+  dplyr::group_by(class, condition) %>%
+  dplyr::summarise(
+    mean = mean(log2_value),
+  ) %>%
+  ungroup() %>%
+  pivot_wider(names_from = condition, values_from = mean) %>%
+  mutate(ratio = .data[[conditions[2]]] - .data[[conditions[1]]])
+
+t_test_by_class <- tidy_data %>%
+  group_by(class) %>%
+  select(class, sample_name, condition, log2_value) %>%
+  rstatix::t_test(log2_value ~ condition, paired = params$paired) %>%
+  ungroup() %>%
+  mutate(padj = p.adjust(p, method="BH")) %>%
+  mutate(z = -0.862 + sqrt(0.743 - 2.404*log(padj))) %>%
+  left_join(mean_log2_class) %>%
+  mutate(SE = ratio/z, lower.limit=ratio - 1.96*SE, upper.limit=ratio + 1.96*SE)
+
 ```
 
 # {.tabset .tabset-pills}
@@ -231,20 +249,22 @@ t_test_res <- tidy_data %>%
 ```
 
 
-## 2. Class plots
+## 2. Class plots  
+  
+This page shows 2 plots per lipid class; these show the lipid subclasses within each class.
 
 ### Box plot information
-The box-and-whisker plots show 5 point summary statistics for the lipid subclasses: the median, upper and lower quartile (box) and min/max values (whiskers). Points beyond whisker limits are outliers. 
-
+The box-and-whisker plots show 5 point summary statistics for the lipid subclasses: the median, upper and lower quartile (box) and min/max values (whiskers). Points beyond whisker limits are outliers.  
 Each data point for the class is overlaid in the corresponding colour.
    
 ### Forest plot information    
 The plots on the right show log2 ratios between the 2 conditions, the red point 
 shows the ratio while the lines show the confidence interval. If the confidence 
 interval does not span over 0, the difference between the 2 conditions for that 
-particular species is likely to be significant.  
-Subclasses that did not fit the assumptions for two-sample t-tests may not be shown in these plots.
+particular species is likely to be significant.    
+Subclasses that did not fit the assumptions for two-sample t-tests may not be shown in these plots.  
   
+Scroll down to view all of the lipid classes or select the blue links below to jump directly to a class.  
 
 ```{r}
 # for if there are loads and we want a link to the plot further down the page
@@ -265,7 +285,9 @@ res <- lapply(lipid_classes, function(lipid_class) {
 cat(unlist(res), sep = '\n')
 ```
 
-## 3. Individual lipids
+## 3. Individual lipids  
+
+This page shows individual data points for each lipid subclass. 
 
 #### Scroll down to browse plots for individual lipids or click on the name in the table below to navigate directly to the plot.
 
