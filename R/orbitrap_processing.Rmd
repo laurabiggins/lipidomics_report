@@ -7,8 +7,8 @@ output:
     self_contained: yes
 output_file: lip
 params:
- # metadata_file: D:/projects/lipidomics/example_data/Bebiana_July/metadata.txt
-  #input_file: D:/projects/lipidomics/example_data/Bebiana_July/alldata.lipidomics_summaryCorr.tsv
+  #metadata_file: D:/projects/lipidomics/example_data/liver/metadata.txt
+  #input_file: D:/projects/lipidomics/example_data/liver/Liver1.tsv
   metadata_file: ../data/metadata.txt
   input_file: ../data/alldata.lipidomics_summary_test_data.tsv
   #input_file: D:/projects/lipidomics/example_data/CSC/datasets/alldata.lipidomics_summary_MiaPaca2_Parental-CSC.csv
@@ -16,13 +16,15 @@ params:
   meta_sample_name: SampleName
   meta_condition_type: Type
   meta_rep: Rep
-  lipid_name_col: X1
   paired: TRUE
   #paired: FALSE
   quick_test: TRUE
   output_folder: out
   bar_class_ylabel: value
   control: Control
+  #control:	Young
+  #bar_class_ylabel: area ratio
+
 ---
 
 <p style="font-size: 11px; font-weight: bold";>
@@ -65,29 +67,20 @@ meta_info <- process_metadata(metadata_file = params$metadata_file, control = pa
 ```
 
 ```{r checks, include = FALSE}
-# sanity checks on data needed
-assertthat::assert_that(
-  params$lipid_name_col %in% colnames(all_data), 
-  msg = paste0(
-    "params$lipid_name_col ", 
-    params$lipid_name_col, 
-    " not found in ", 
-    colnames(all_data)
-  )
-)
+lipid_name_column <- colnames(all_data)[1]
 
 assertthat::assert_that(
-  all(colnames(all_data) %in% c(meta_info$sample_name, params$lipid_name_col)),
+  all(colnames(all_data) %in% c(meta_info$sample_name, lipid_name_column)),
   msg = paste0(
     "Unexpected column name(s) found in all_data file: ", 
-    paste0(colnames(all_data)[!(colnames(all_data) %in% c(meta_info$sample_name, params$lipid_name_col))], collapse = ", ")
+    paste0(colnames(all_data)[!(colnames(all_data) %in% c(meta_info$sample_name, lipid_name_column))], collapse = ", ")
   )
 )
 ```
 
 ```{r process_data, include = FALSE}
 all_data <- dplyr::rename(
-  all_data, lipid_name := tidyselect::all_of(params$lipid_name_col)
+  all_data, lipid_name := tidyselect::all_of(lipid_name_column)
 )
 
 # all_data is used for heatmaps
