@@ -76,12 +76,23 @@ assertthat::assert_that(
     paste0(colnames(all_data)[!(colnames(all_data) %in% c(meta_info$sample_name, lipid_name_column))], collapse = ", ")
   )
 )
+
 ```
 
 ```{r process_data, include = FALSE}
 all_data <- dplyr::rename(
   all_data, lipid_name := tidyselect::all_of(lipid_name_column)
 )
+
+assertthat::assert_that(
+  anyDuplicated(all_data$lipid_name) == 0,
+  msg = paste0(
+    sum(duplicated(all_data$lipid_name)), 
+    " duplicated lipid names found, please remove these from the input data before rerunning the report."
+  )
+)
+               
+
 
 # all_data is used for heatmaps
 all_data <- all_data %>%
