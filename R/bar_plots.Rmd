@@ -31,14 +31,20 @@ custom_forest <- function(plot_data, lipid_class){
     filter(class == lipid_class) %>%
     mutate(lipid_name = forcats::as_factor(lipid_name))
   
-  plot_data %>%
-    filter(class == lipid_class) %>%
-    ggplot(aes(ratio, lipid_name)) +
-    geom_errorbar(aes(xmin=lower.limit, xmax=upper.limit), width = 0.5, lwd=0.8, show.legend=FALSE)+
-    geom_point(size=3, colour="darkred")+
-    geom_vline(xintercept=0, linetype="dashed", color = "red")+
-    scale_x_continuous(breaks=seq(from =-15, by=1, to=5)) +
-    scale_y_discrete(limits = rev(levels(plot_data$lipid_name)))
+  if(nrow(plot_data) == 0){
+    ggplot() + 
+      annotate("text", x = 1, y = 1,size = 8, label = "No data available") +
+      theme_void()
+  } else {
+    plot_data %>%
+      filter(class == lipid_class) %>%
+      ggplot(aes(ratio, lipid_name)) +
+      geom_errorbar(aes(xmin=lower.limit, xmax=upper.limit), width = 0.5, lwd=0.8, show.legend=FALSE)+
+      geom_point(size=3, colour="darkred")+
+      geom_vline(xintercept=0, linetype="dashed", color = "red")+
+      scale_x_continuous(breaks=seq(from =-15, by=1, to=5)) +
+      scale_y_discrete(limits = rev(levels(plot_data$lipid_name)))
+  }
 }  
 ```
 
