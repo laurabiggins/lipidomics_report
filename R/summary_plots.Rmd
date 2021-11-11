@@ -101,12 +101,24 @@ plot_base_pie <- function(pie_condition, pie_dataset){
 purrr::walk(levels(pie_data$condition), plot_base_pie, pie_data)
 ```
 
-### Lipids in "other" category   
+  
+```{r, results = "asis"}
+output_text <- function(x, size = 12) {
+  sprintf("<span style='font-size: %spx;'>%s</span>", size, x)
+}
 
-This is a breakdown of the categories that comprise the "other" category in the charts above.      
+if(nrow(other_pie_data) > 0) {
+  cat(output_text('Lipids in "other" category  \n', size = 24))
+  cat("  ")
+  cat(output_text('This is a breakdown of the categories that comprise the "other" category in the charts above.', size = 14))
+}
+```
+
 
 ```{r, main_pie_charts, out.width=c('50%', '50%'), fig.show='hold', fig.height = 7}
-purrr::walk(levels(other_pie_data$condition), plot_base_pie, other_pie_data)
+if(nrow(other_pie_data) > 0) {
+  purrr::walk(levels(other_pie_data$condition), plot_base_pie, other_pie_data)
+}
 ```
 
 
