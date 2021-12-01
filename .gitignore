@@ -9,3 +9,5 @@ orbitrap_processing_files
 temp
 output
 R/out
+info/example_output.md
+info/example_output.html
