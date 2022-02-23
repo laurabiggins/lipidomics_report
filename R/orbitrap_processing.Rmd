@@ -7,8 +7,8 @@ output:
     self_contained: yes
 output_file: lip
 params:
-  #metadata_file: D:/projects/lipidomics/example_data/liver/metadata.txt
-  #input_file: D:/projects/lipidomics/example_data/liver/Liver1.tsv
+  #metadata_file: D:/projects/lipidomics/example_data/Feb_22/metadata.txt
+  #input_file: D:/projects/lipidomics/example_data/Feb_22/Con_Dis.tsv
   metadata_file: ../data/metadata.txt
   input_file: ../data/alldata.lipidomics_summary_test_data.tsv
   #input_file: D:/projects/lipidomics/example_data/CSC/datasets/alldata.lipidomics_summary_MiaPaca2_Parental-CSC.csv
@@ -69,13 +69,23 @@ meta_info <- process_metadata(metadata_file = params$metadata_file, control = pa
 ```{r checks, include = FALSE}
 lipid_name_column <- colnames(all_data)[1]
 
-assertthat::assert_that(
+# change this to a warning and just remove any extra columns
+assertthat::validate_that(
   all(colnames(all_data) %in% c(meta_info$sample_name, lipid_name_column)),
-  msg = paste0(
+  msg = cat(paste(
     "Unexpected column name(s) found in all_data file: ", 
-    paste0(colnames(all_data)[!(colnames(all_data) %in% c(meta_info$sample_name, lipid_name_column))], collapse = ", ")
-  )
+    paste0(colnames(all_data)[!(colnames(all_data) %in% c(meta_info$sample_name, lipid_name_column))],
+           collapse = ", "),
+    "These will be removed from the dataset.",
+    sep="\n"
+  ))
 )
+
+if(!all(colnames(all_data) %in% c(meta_info$sample_name, lipid_name_column))){
+  all_data <- all_data |> 
+    dplyr::select(lipid_name_column, meta_info$sample_name)
+}
+
 
 ```
 
